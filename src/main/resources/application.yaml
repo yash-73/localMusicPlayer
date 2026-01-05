@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: Local Music Player
+    port: 8080
+
+  security:
+    user:
+      name: yash
+      password: awesome
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/localPlayer
+    username: springuser
+    password: your_password
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
