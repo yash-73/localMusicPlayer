@@ -5,5 +5,5 @@ import com.altspot.local.payload.UserDTO;
 
 public interface UserService {
 
-    String registerUser(UserDTO userDTO);
+    UserDTO registerUser(UserDTO userDTO);
 }

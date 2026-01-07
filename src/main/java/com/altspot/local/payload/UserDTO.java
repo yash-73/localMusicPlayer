@@ -1,5 +1,6 @@
 package com.altspot.local.payload;
 
+import com.altspot.local.model.AppRole;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,6 @@ public class UserDTO {
 
     private String username;
     private String password;
-    Set<String> roles;
+    Set<AppRole> roles;
 
 }

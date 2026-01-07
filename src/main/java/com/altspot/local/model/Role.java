@@ -1,6 +1,5 @@
 package com.altspot.local.model;
 
-import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
 @Entity

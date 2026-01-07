@@ -4,8 +4,8 @@ import com.altspot.local.payload.UserDTO;
 import com.altspot.local.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,16 +27,16 @@ public class UserController {
         return "Hello there!";
     }
 
-    @PostMapping("register")
-    public ResponseEntity<Object> registerUser(UserDTO userDTO){
-        try{
-            String response = userService.registerUser(userDTO);
-            return new ResponseEntity<>(userDTO, HttpStatus.OK);
-        }
-        catch(Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+//    @PostMapping("register")
+//    public ResponseEntity<Object> registerUser(UserDTO userDTO){
+//        try{
+//            String response = userService.registerUser(userDTO);
+//            return new ResponseEntity<>(userDTO, HttpStatus.OK);
+//        }
+//        catch(Exception e){
+//            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
     @GetMapping("sid")
     public ResponseEntity<String> getSessionId(HttpServletRequest request){
@@ -44,6 +44,7 @@ public class UserController {
         return ResponseEntity.ok(sessionId);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("post")
     public ResponseEntity<UserDTO> postData(@RequestBody UserDTO  userDTO){
         return ResponseEntity.ok(userDTO);
