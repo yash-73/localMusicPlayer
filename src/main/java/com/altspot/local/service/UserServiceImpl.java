@@ -10,6 +10,9 @@ import com.altspot.local.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,17 +21,21 @@ import java.util.Optional;
 @Service
 public class UserServiceImpl implements UserService{
 
-    Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+
+    private final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     public UserRepository userRepository;
     public RoleRepository roleRepository;
     public PasswordEncoder passwordEncoder;
+//    public AuthenticationManager authenticationManager;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository,  RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository,  RoleRepository roleRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+//        this.authenticationManager = authenticationManager;
     }
 
     @Override
@@ -61,6 +68,21 @@ public class UserServiceImpl implements UserService{
             throw new GeneralException(e.getMessage());
         }
     }
+//    @Override
+//    public String verify(UserDTO user) throws GeneralException {
+//        logger.info("Verifying user {} ", user.getUsername());
+//
+//            Authentication authentication = authenticationManager.authenticate( new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+//            if(authentication.isAuthenticated()) {
+//                logger.info("User {} is authenticated ",user.getUsername());
+//                logger.info(user.toString());
+//                return authentication.getPrincipal().toString();
+//            }
+//        logger.info("User {} is not authenticated "  , user.getUsername());
+//            return null;
+//
+//    }
+
 
 }
 

@@ -16,4 +16,9 @@ public class UserDTO {
     private String password;
     Set<AppRole> roles;
 
+    public UserDTO(String username, String password){
+        this.username = username;
+        this.password = password;
+    }
+
 }

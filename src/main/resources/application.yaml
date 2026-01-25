@@ -20,3 +20,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+
+  logging:
+    level:
+      root: INFO
+
+
+music:
+  directory:
+    path: /home/yash/Music

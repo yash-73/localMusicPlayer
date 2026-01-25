@@ -8,6 +8,7 @@ public class LocalMusicPlayerApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(LocalMusicPlayerApplication.class, args);
+		System.out.println("System Starting");
 	}
 
 }
