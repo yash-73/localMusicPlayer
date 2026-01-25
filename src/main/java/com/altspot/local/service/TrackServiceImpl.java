@@ -1,9 +1,28 @@
 package com.altspot.local.service;
 
+import com.altspot.local.model.Track;
+import com.altspot.local.payload.RescanResult;
 import com.altspot.local.repository.TrackRepository;
 import jakarta.transaction.Transactional;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.AudioHeader;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -19,6 +38,101 @@ public class TrackServiceImpl implements TrackService {
     }
 
 
+    @Override
+    public RescanResult rescan() throws IOException {
+
+        Set<String> dbPaths = trackRepository.findAllFilePaths();
+        Set<String> fsPaths = new HashSet<>();
+
+        AtomicInteger inserted = new AtomicInteger();
+        AtomicInteger updated = new AtomicInteger();
+        AtomicInteger deleted = new AtomicInteger();
+
+        try (Stream<Path> stream = Files.walk(Paths.get(musicDirectoryPath))) {
+
+            stream.filter(Files::isRegularFile)
+                    .filter(this::isMp3)
+                    .forEach(path -> {
+
+                        String absPath = path.toAbsolutePath().toString();
+                        fsPaths.add(absPath);
+
+                        Optional<Track> opt = trackRepository.findByFilePath(absPath);
+
+                        try {
+                            if (opt.isEmpty()) {
+                                Track track = buildTrack(path.toFile());
+                                trackRepository.save(track);
+                                inserted.incrementAndGet();
+                            } else {
+                                Track track = opt.get();
+                                track.setLastScannedAt(Instant.now());
+                                updated.incrementAndGet();
+                            }
+                        } catch (Exception e) {
+                            // bad file, log & skip
+                            System.out.println("Failed to read: " + absPath);
+                        }
+                    });
+
+        }
+
+        // delete DB entries missing from filesystem
+        for (String dbPath : dbPaths) {
+            if (!fsPaths.contains(dbPath)) {
+                trackRepository.deleteByFilePath(dbPath);
+                deleted.incrementAndGet();
+            }
+        }
+
+        return new RescanResult(
+                inserted.get(),
+                updated.get(),
+                deleted.get()
+        );
+    }
+
+
+    private boolean isMp3(Path path) {
+        return path.getFileName()
+                .toString()
+                .toLowerCase()
+                .endsWith(".mp3");
+    }
+
+    private Track buildTrack(File file) throws Exception {
+
+        AudioFile audio = AudioFileIO.read(file);
+        Tag tag = audio.getTag();
+        AudioHeader header = audio.getAudioHeader();
+
+        Track track = new Track();
+
+        if (tag != null) {
+            track.setTitle(emptyToNull(tag.getFirst(FieldKey.TITLE)));
+            track.setArtist(emptyToNull(tag.getFirst(FieldKey.ARTIST)));
+            track.setAlbum(emptyToNull(tag.getFirst(FieldKey.ALBUM)));
+            track.setGenre(emptyToNull(tag.getFirst(FieldKey.GENRE)));
+        }
+
+        track.setDurationSeconds(header.getTrackLength());
+
+        try {
+            track.setSampleRate(Integer.parseInt(header.getSampleRate()));
+        } catch (NumberFormatException e) {
+            track.setSampleRate(null);
+        }
+
+        track.setFilePath(file.getAbsolutePath());
+        track.setFileSize(file.length());
+        track.setLastScannedAt(Instant.now());
+
+        return track;
+    }
+
+    private String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
 
 
 }
