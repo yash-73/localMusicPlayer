@@ -87,8 +87,8 @@ public class TrackServiceImpl implements TrackService {
 
         return new RescanResult(
                 inserted.get(),
-                updated.get(),
-                deleted.get()
+                deleted.get(),
+                updated.get()
         );
     }
 
