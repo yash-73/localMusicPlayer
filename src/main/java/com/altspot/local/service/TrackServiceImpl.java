@@ -1,5 +1,6 @@
 package com.altspot.local.service;
 
+import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.RescanResult;
 import com.altspot.local.repository.TrackRepository;
@@ -10,10 +11,14 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,6 +96,54 @@ public class TrackServiceImpl implements TrackService {
                 updated.get()
         );
     }
+
+    @Override
+    public ResponseEntity<Resource> stream(Long trackId, String range) throws IOException {
+
+        Path path = Path.of(getFilePathFromDB(trackId));
+        long fileSize = Files.size(path);
+
+        long start = 0;
+        long end = fileSize - 1;
+
+        if (range != null && range.startsWith("bytes=")) {
+            String[] parts = range.substring(6).split("-");
+            start = Long.parseLong(parts[0]);
+            if (parts.length > 1 && !parts[1].isEmpty()) {
+                end = Long.parseLong(parts[1]);
+            }
+        }
+
+        long contentLength = end - start + 1;
+
+        RandomAccessFile raf = new RandomAccessFile(path.toFile(), "r");
+        raf.seek(start);
+
+        InputStream inputStream = new FileInputStream(raf.getFD());
+        Resource resource = new InputStreamResource(inputStream);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileSize);
+        headers.add(HttpHeaders.ACCEPT_RANGES, "bytes");
+        headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(contentLength));
+        headers.add(HttpHeaders.CONTENT_TYPE, Files.probeContentType(path));
+
+        return ResponseEntity
+                .status(HttpStatus.PARTIAL_CONTENT)
+                .headers(headers)
+                .body(resource);
+    }
+
+
+
+    private String getFilePathFromDB(Long trackId) {
+    // lookup from MySQL
+        Optional<Track> opt = trackRepository.findById(trackId);
+        if (opt.isEmpty() || emptyToNull(opt.get().getFilePath()) == null) {
+            throw new ResourceNotFound("Track with trackId" + trackId + " not found");
+        }
+        return opt.get().getFilePath();
+}
 
 
     private boolean isMp3(Path path) {
