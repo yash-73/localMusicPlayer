@@ -33,11 +33,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
-        http
+        http    
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(request ->
-                        request.requestMatchers("/login"  , "/register" ,  "/public/**").permitAll()
+                        request.requestMatchers("/login"  , "/register" ,  "/public/**" , "/tracks/**" ).permitAll()
                                 .anyRequest().authenticated())
 //                .formLogin(Customizer.withDefaults())
                 .httpBasic(Customizer.withDefaults())

@@ -1,5 +1,7 @@
 package com.altspot.local.controller;
 
+import com.altspot.local.config.AppConstants;
+import com.altspot.local.payload.PageResult;
 import com.altspot.local.payload.RescanResult;
 import com.altspot.local.service.TrackService;
 import org.springframework.core.io.Resource;
@@ -32,4 +34,18 @@ public class TrackController {
     ) throws IOException {
         return trackService.stream(id, range);
     }
+
+    @GetMapping("get/tracks")
+    public ResponseEntity<PageResult> getAllTracks(
+            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER , required = false) Integer pageNumber,
+            @RequestParam(name = "pageSize" , defaultValue = AppConstants.PAGE_SIZE , required = false) Integer pageSize,
+            @RequestParam(name = "sortDirection" , defaultValue = AppConstants.SORT_DIR , required = false) String sortDirection
+    ) throws IOException {
+        PageResult result = trackService.getTracks(pageNumber , pageSize , sortDirection);
+        return ResponseEntity.ok(result);
+    }
+
+
+
+
 }
