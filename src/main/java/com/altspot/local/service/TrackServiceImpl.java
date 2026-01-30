@@ -3,9 +3,7 @@ package com.altspot.local.service;
 import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Track;
-import com.altspot.local.payload.PageResult;
-import com.altspot.local.payload.RescanResult;
-import com.altspot.local.payload.TrackDTO;
+import com.altspot.local.payload.*;
 import com.altspot.local.repository.TrackRepository;
 import jakarta.transaction.Transactional;
 import org.jaudiotagger.audio.AudioFile;
@@ -70,7 +68,7 @@ public class TrackServiceImpl implements TrackService {
         try (Stream<Path> stream = Files.walk(Paths.get(musicDirectoryPath))) {
 
             stream.filter(Files::isRegularFile)
-                    .filter(this::isMp3)
+                    .filter(this::isMusicFile)
                     .forEach(path -> {
 
                         String absPath = path.toAbsolutePath().toString();
@@ -149,16 +147,16 @@ public class TrackServiceImpl implements TrackService {
     }
 
     @Override
-    public PageResult getTracks(Integer pageNumber, Integer pageSize, String sortDirection) throws IOException {
+    public PageResult<TrackDTO> getTracks(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException {
 
         Sort sortByAndOrder = sortDirection.equalsIgnoreCase("asc") ?
-                Sort.by("id").ascending() : Sort.by("id").descending();
+                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
 
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
-        Page<Track> trackPage = trackRepository.findAll(pageDetails);
+        Page<TrackSummary> trackPage = trackRepository.findAllProjectedBy(pageDetails);
 
-        List<Track> tracks = trackPage.getContent();
+        List<TrackSummary> tracks = trackPage.getContent();
 
         if (tracks.isEmpty()) throw new GeneralException("No tracks available");
 
@@ -166,7 +164,7 @@ public class TrackServiceImpl implements TrackService {
                 .map(track -> modelMapper.map(track, TrackDTO.class))
                 .toList();
 
-        PageResult trackResponse = new PageResult();
+        PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
         trackResponse.setContent(content);
         trackResponse.setPageNumber(trackPage.getNumber());
         trackResponse.setTotalPages(trackPage.getTotalPages());
@@ -177,9 +175,40 @@ public class TrackServiceImpl implements TrackService {
         return trackResponse;
     }
 
+    @Override
+    public PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException {
+        Sort sort = sortDirection.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+
+        Page<AlbumSummary> albumPage =
+                trackRepository.findAlbumSummaries(pageable);
+
+        List<AlbumSummary> albums = albumPage.getContent();
+
+        if (albums.isEmpty()) {
+            throw new GeneralException("No albums available");
+        }
+
+        List<AlbumDTO> content = albums.stream()
+                .map(album -> modelMapper.map(album , AlbumDTO.class))
+                .toList();
+
+        PageResult<AlbumDTO> response = new PageResult<>();
+        response.setContent(content); // projections are already DTO-shaped
+        response.setPageNumber(albumPage.getNumber());
+        response.setTotalPages(albumPage.getTotalPages());
+        response.setTotalElements(albumPage.getTotalElements());
+        response.setLastPage(albumPage.isLast());
+        response.setPageSize(albumPage.getSize());
+
+        return response;
+    }
+
 
     private String getFilePathFromDB(Long trackId) {
-    // lookup from MySQL
         Optional<Track> opt = trackRepository.findById(trackId);
         if (opt.isEmpty() || emptyToNull(opt.get().getFilePath()) == null) {
             throw new ResourceNotFound("Track with trackId" + trackId + " not found");
@@ -188,11 +217,11 @@ public class TrackServiceImpl implements TrackService {
 }
 
 
-    private boolean isMp3(Path path) {
-        return path.getFileName()
+    private boolean isMusicFile(Path path) {
+        String fileName =  path.getFileName()
                 .toString()
-                .toLowerCase()
-                .endsWith(".mp3");
+                .toLowerCase();
+        return fileName.endsWith(".mp3") || fileName.endsWith(".wav");
     }
 
     private Track buildTrack(File file) throws Exception {

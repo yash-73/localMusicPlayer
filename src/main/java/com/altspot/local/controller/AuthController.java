@@ -22,18 +22,11 @@ public class AuthController {
        this.userService = userService;
    }
 
-//    @PostMapping("register")
-//    public ResponseEntity<UserDTO> registerUser(@RequestBody UserDTO userDTO) {
-//         UserDTO registeredUser = userService.registerUser(userDTO);
-//         return ResponseEntity.ok(registeredUser);
-//    }
-//
-//    @PostMapping("login")
-//    public String loginUser(@RequestBody UserDTO user) {
-//        logger.info("User {} is being authenticated ",user.getUsername());
-//       String response = userService.verify(user);
-//       return response;
-//
-//    }
+    @PostMapping("register")
+    public ResponseEntity<UserDTO> registerUser(@RequestBody UserDTO userDTO) {
+         UserDTO registeredUser = userService.registerUser(userDTO);
+         return ResponseEntity.ok(registeredUser);
+    }
+
 
 }

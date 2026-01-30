@@ -8,8 +8,8 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PageResult {
-    private List<TrackDTO> content;
+public class PageResult<T> {
+    private List<T> content;
     private Integer pageNumber;
     private Integer pageSize;
     private Long totalElements;

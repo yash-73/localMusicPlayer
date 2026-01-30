@@ -12,8 +12,8 @@ public class TrackDTO {
     public String title;
     public String album;
     public String artist;
-    private String genre;
-    public Integer durationSeconds;
-    public Integer sampleRate;
-    private Long fileSize;
+//    private String genre;
+//    public Integer durationSeconds;
+//    public Integer sampleRate;
+//    private Long fileSize;
 }
