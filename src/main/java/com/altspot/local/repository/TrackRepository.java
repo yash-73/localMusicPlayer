@@ -2,6 +2,7 @@ package com.altspot.local.repository;
 
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.AlbumSummary;
+import com.altspot.local.payload.ArtistSummary;
 import com.altspot.local.payload.TrackSummary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +43,7 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
     )
     Page<AlbumSummary> findAlbumSummaries(Pageable pageable);
 
+    Page<ArtistSummary> findDistinctBy(Pageable pageable);
 
 
 

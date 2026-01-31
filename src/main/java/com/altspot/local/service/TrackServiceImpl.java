@@ -206,7 +206,39 @@ public class TrackServiceImpl implements TrackService {
 
         return response;
     }
-
+//
+//    @Override
+//    public PageResult<ArtistDTO> getArtists(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException {
+//        Sort sort = sortDirection.equalsIgnoreCase("asc")
+//                ? Sort.by(sortBy).ascending()
+//                : Sort.by(sortBy).descending();
+//
+//        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+//
+//        Page<ArtistSummary> albumPage =
+//                trackRepository.findArtistSummaries(pageable);
+//
+//        List<AlbumSummary> albums = albumPage.getContent();
+//
+//        if (albums.isEmpty()) {
+//            throw new GeneralException("No albums available");
+//        }
+//
+//        List<AlbumDTO> content = albums.stream()
+//                .map(album -> modelMapper.map(album , AlbumDTO.class))
+//                .toList();
+//
+//        PageResult<AlbumDTO> response = new PageResult<>();
+//        response.setContent(content); // projections are already DTO-shaped
+//        response.setPageNumber(albumPage.getNumber());
+//        response.setTotalPages(albumPage.getTotalPages());
+//        response.setTotalElements(albumPage.getTotalElements());
+//        response.setLastPage(albumPage.isLast());
+//        response.setPageSize(albumPage.getSize());
+//
+//        return response;
+//    }
+//
 
     private String getFilePathFromDB(Long trackId) {
         Optional<Track> opt = trackRepository.findById(trackId);
