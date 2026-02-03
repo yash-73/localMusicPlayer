@@ -1,11 +1,9 @@
 package com.altspot.local.service;
 
-
 import com.altspot.local.model.*;
 import com.altspot.local.payload.RescanResult;
 import com.altspot.local.repository.*;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
@@ -31,8 +29,13 @@ public class RescanServiceImpl {
     private final TrackArtistMaintenanceRepository trackArtistMaintenanceRepository;
     private final AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository;
 
-    public RescanServiceImpl (TrackRepository trackRepository ,AlbumRepository albumRepository,
-                              ArtistRepository artistRepository, TrackArtistMaintenanceRepository trackArtistMaintenanceRepository, AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository) {
+    public RescanServiceImpl(
+            TrackRepository trackRepository,
+            AlbumRepository albumRepository,
+            ArtistRepository artistRepository,
+            TrackArtistMaintenanceRepository trackArtistMaintenanceRepository,
+            AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository
+    ) {
         this.trackRepository = trackRepository;
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
@@ -59,24 +62,37 @@ public class RescanServiceImpl {
                     .filter(this::isMusicFile)
                     .toList()) {
 
-                String absPath = path.toAbsolutePath().toString();
+                File file = path.toFile();
+                String absPath = file.getAbsolutePath();
                 fsPaths.add(absPath);
 
-                Optional<Track> existing = trackRepository.findByFilePath(absPath);
+                Optional<Track> existingOpt = trackRepository.findByFilePath(absPath);
 
+                /* ---------- FAST PATH: unchanged file ---------- */
+                if (existingOpt.isPresent()) {
+                    Track existing = existingOpt.get();
+
+                    if (Objects.equals(existing.getFileSize(), file.length())) {
+                        existing.setLastScannedAt(Instant.now());
+                        updated++;
+                        continue;
+                    }
+                }
+
+                /* ---------- SLOW PATH: parse metadata ---------- */
                 TrackMeta meta;
                 try {
-                    meta = extractMetadata(path.toFile());
+                    meta = extractMetadata(file);
                 } catch (Exception e) {
                     System.out.println("Failed to read metadata: " + absPath);
                     continue;
                 }
 
-                if (existing.isEmpty()) {
+                if (existingOpt.isEmpty()) {
                     insertTrack(meta);
                     inserted++;
                 } else {
-                    updateTrack(existing.get(), meta);
+                    updateTrack(existingOpt.get(), meta);
                     updated++;
                 }
             }
@@ -97,7 +113,6 @@ public class RescanServiceImpl {
     }
 
     /* ======================= INSERT / UPDATE ======================= */
-
 
     @Transactional
     protected void insertTrack(TrackMeta meta) {

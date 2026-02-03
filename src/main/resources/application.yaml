@@ -25,6 +25,10 @@ spring:
   logging:
     level:
       root: INFO
+      org.jaudiotagger: ERROR
+      org.jaudiotagger.tag.id3: ERROR
+
+
 
 
 music:

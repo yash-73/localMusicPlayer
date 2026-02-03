@@ -1,15 +1,21 @@
 package com.altspot.local.service;
 
 
+import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Album;
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.PageResult;
 import com.altspot.local.payload.TrackDTO;
+import com.altspot.local.payload.TrackSummary;
 import com.altspot.local.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +27,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -83,7 +90,31 @@ public class TrackServiceImpl implements TrackService {
 
     @Override
     public PageResult<TrackDTO> getTracks(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException {
-        return null;
+
+        Sort sortByAndOrder = sortDirection.equalsIgnoreCase("asc") ?
+                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
+        Page<TrackSummary> trackPage = trackRepository.findAllProjectedBy(pageDetails);
+
+        List<TrackSummary> tracks = trackPage.getContent();
+
+        if (tracks.isEmpty()) throw new GeneralException("No tracks available");
+
+        List<TrackDTO> content = tracks.stream()
+                .map(track -> modelMapper.map(track, TrackDTO.class))
+                .toList();
+
+        PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
+        trackResponse.setContent(content);
+        trackResponse.setPageNumber(trackPage.getNumber());
+        trackResponse.setTotalPages(trackPage.getTotalPages());
+        trackResponse.setTotalElements(trackPage.getTotalElements());
+        trackResponse.setLastPage(trackPage.isLast());
+        trackResponse.setPageSize(trackPage.getSize());
+
+        return trackResponse;
     }
 
     private String getFilePathFromDB(Long trackId) {

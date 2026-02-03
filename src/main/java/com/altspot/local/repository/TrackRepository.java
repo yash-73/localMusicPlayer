@@ -1,10 +1,14 @@
 package com.altspot.local.repository;
 
 import com.altspot.local.model.Track;
+import com.altspot.local.payload.TrackSummary;
+
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.domain.Pageable;
 import java.util.Optional;
 import java.util.Set;
 
@@ -17,4 +21,6 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
     Set<String> findAllFilePaths();
 
     int countByAlbum_Id(Long albumId);
+
+    Page<TrackSummary> findAllProjectedBy(Pageable pageDetails);
 }
