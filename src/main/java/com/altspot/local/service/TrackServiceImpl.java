@@ -1,18 +1,13 @@
 package com.altspot.local.service;
 
+
 import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
+import com.altspot.local.model.Album;
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.*;
-import com.altspot.local.repository.TrackRepository;
-import jakarta.transaction.Transactional;
-import org.jaudiotagger.audio.AudioFile;
-import org.jaudiotagger.audio.AudioFileIO;
-import org.jaudiotagger.audio.AudioHeader;
-import org.jaudiotagger.tag.FieldKey;
-import org.jaudiotagger.tag.Tag;
+import com.altspot.local.repository.*;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -24,89 +19,35 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
 public class TrackServiceImpl implements TrackService {
 
-    @Value("${music.directory.path}")
-    private String musicDirectoryPath;
-
-    private final TrackRepository trackRepository;
-
     private final ModelMapper modelMapper;
+    private final TrackRepository trackRepository;
+    private final AlbumRepository albumRepository;
+    private final ArtistRepository artistRepository;
+    private final TrackArtistMaintenanceRepository trackArtistMaintenanceRepository;
+    private final AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository;
 
-    public TrackServiceImpl(TrackRepository trackRepository, ModelMapper modelMapper) {
-        this.trackRepository = trackRepository;
+    public TrackServiceImpl(ModelMapper modelMapper, TrackRepository trackRepository, AlbumRepository albumRepository, ArtistRepository artistRepository,
+                            TrackArtistMaintenanceRepository trackArtistMaintenanceRepository, AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository) {
         this.modelMapper = modelMapper;
-    }
+        this.trackRepository = trackRepository;
+        this.albumRepository = albumRepository;
+        this.artistRepository = artistRepository;
+        this.trackArtistMaintenanceRepository = trackArtistMaintenanceRepository;
+        this.albumArtistMaintenanceRepository = albumArtistMaintenanceRepository;
 
-
-    @Override
-    public RescanResult rescan() throws IOException {
-
-        Set<String> dbPaths = trackRepository.findAllFilePaths();
-        Set<String> fsPaths = new HashSet<>();
-
-        AtomicInteger inserted = new AtomicInteger();
-        AtomicInteger updated = new AtomicInteger();
-        AtomicInteger deleted = new AtomicInteger();
-
-        try (Stream<Path> stream = Files.walk(Paths.get(musicDirectoryPath))) {
-
-            stream.filter(Files::isRegularFile)
-                    .filter(this::isMusicFile)
-                    .forEach(path -> {
-
-                        String absPath = path.toAbsolutePath().toString();
-                        fsPaths.add(absPath);
-
-                        Optional<Track> opt = trackRepository.findByFilePath(absPath);
-
-                        try {
-                            if (opt.isEmpty()) {
-                                Track track = buildTrack(path.toFile());
-                                trackRepository.save(track);
-                                inserted.incrementAndGet();
-                            } else {
-                                Track track = opt.get();
-                                track.setLastScannedAt(Instant.now());
-                                updated.incrementAndGet();
-                            }
-                        } catch (Exception e) {
-                            // bad file, log & skip
-                            System.out.println("Failed to read: " + absPath);
-                        }
-                    });
-
-        }
-
-        // delete DB entries missing from filesystem
-        for (String dbPath : dbPaths) {
-            if (!fsPaths.contains(dbPath)) {
-                trackRepository.deleteByFilePath(dbPath);
-                deleted.incrementAndGet();
-            }
-        }
-
-        return new RescanResult(
-                inserted.get(),
-                deleted.get(),
-                updated.get()
-        );
     }
 
     @Override
@@ -161,7 +102,25 @@ public class TrackServiceImpl implements TrackService {
         if (tracks.isEmpty()) throw new GeneralException("No tracks available");
 
         List<TrackDTO> content = tracks.stream()
-                .map(track -> modelMapper.map(track, TrackDTO.class))
+                .map(track -> {
+                    TrackDTO trackDTO = new TrackDTO();
+                    trackDTO.setId(track.getId());
+                    trackDTO.setName(track.getName());
+                    trackDTO.setDurationSeconds(track.getDurationSeconds());
+                    trackDTO.setArtists(
+                            track.getArtists().stream().map(artist -> new ArtistDTO(artist.getId(), artist.getName())).collect(Collectors.toSet())
+                    );
+
+                    ArtistDTO primaryArtist = new  ArtistDTO();
+                    primaryArtist.setId(track.getAlbum().getPrimaryArtist().getId());
+                    primaryArtist.setName(track.getAlbum().getPrimaryArtist().getName());
+
+                    trackDTO.setAlbum(new AlbumDTO(track.getAlbum().getId() , track.getAlbum().getName() , primaryArtist));
+
+                    return trackDTO;
+
+
+                })
                 .toList();
 
         PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
@@ -175,88 +134,18 @@ public class TrackServiceImpl implements TrackService {
         return trackResponse;
     }
 
-    @Override
-    public PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException {
-        Sort sort = sortDirection.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
-
-        Page<AlbumSummary> albumPage =
-                trackRepository.findAlbumSummaries(pageable);
-
-        List<AlbumSummary> albums = albumPage.getContent();
-
-        if (albums.isEmpty()) {
-            throw new GeneralException("No albums available");
-        }
-
-        List<AlbumDTO> content = albums.stream()
-                .map(album -> modelMapper.map(album , AlbumDTO.class))
-                .toList();
-
-        PageResult<AlbumDTO> response = new PageResult<>();
-        response.setContent(content); // projections are already DTO-shaped
-        response.setPageNumber(albumPage.getNumber());
-        response.setTotalPages(albumPage.getTotalPages());
-        response.setTotalElements(albumPage.getTotalElements());
-        response.setLastPage(albumPage.isLast());
-        response.setPageSize(albumPage.getSize());
-
-        return response;
-    }
-
-
     private String getFilePathFromDB(Long trackId) {
         Optional<Track> opt = trackRepository.findById(trackId);
         if (opt.isEmpty() || emptyToNull(opt.get().getFilePath()) == null) {
             throw new ResourceNotFound("Track with trackId" + trackId + " not found");
         }
         return opt.get().getFilePath();
-}
-
-
-    private boolean isMusicFile(Path path) {
-        String fileName =  path.getFileName()
-                .toString()
-                .toLowerCase();
-        return fileName.endsWith(".mp3") || fileName.endsWith(".wav");
-    }
-
-    private Track buildTrack(File file) throws Exception {
-
-        AudioFile audio = AudioFileIO.read(file);
-        Tag tag = audio.getTag();
-        AudioHeader header = audio.getAudioHeader();
-
-        Track track = new Track();
-
-        if (tag != null) {
-            track.setTitle(emptyToNull(tag.getFirst(FieldKey.TITLE)));
-            track.setArtist(emptyToNull(tag.getFirst(FieldKey.ARTIST)));
-            track.setAlbum(emptyToNull(tag.getFirst(FieldKey.ALBUM)));
-            track.setGenre(emptyToNull(tag.getFirst(FieldKey.GENRE)));
-        }
-
-        track.setDurationSeconds(header.getTrackLength());
-
-        try {
-            track.setSampleRate(Integer.parseInt(header.getSampleRate()));
-        } catch (NumberFormatException e) {
-            track.setSampleRate(null);
-        }
-
-        track.setFilePath(file.getAbsolutePath());
-        track.setFileSize(file.length());
-        track.setLastScannedAt(Instant.now());
-
-        return track;
     }
 
     private String emptyToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
     }
+
 
 
 }

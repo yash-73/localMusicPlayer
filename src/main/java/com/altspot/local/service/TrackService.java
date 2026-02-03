@@ -10,11 +10,14 @@ import java.nio.file.Path;
 
 public interface TrackService {
 
-    RescanResult rescan() throws IOException;
 
     ResponseEntity<Resource> stream(Long trackId, String range) throws IOException;
-
+//
     PageResult<TrackDTO> getTracks(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
+//
+//    PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
+//
+//    PageResult<ArtistDTO> getArtists(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
+//
 
-    public PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
 }

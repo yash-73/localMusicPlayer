@@ -11,4 +11,15 @@ public class RescanResult {
         this.deleted = deleted;
         this.updated = updated;
     }
+
+    public int updated() {
+        return updated;
+    }
+
+    public int deleted() {
+        return deleted;
+    }
+    public int inserted() {
+        return inserted;
+    }
 }
