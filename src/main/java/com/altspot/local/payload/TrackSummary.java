@@ -9,6 +9,6 @@ public interface TrackSummary {
     Long getId();
     String getName();
     Album getAlbum();
-    Set<Artist> getArtist();
+    Set<Artist> getArtists();
     Integer getDurationSeconds();
 }

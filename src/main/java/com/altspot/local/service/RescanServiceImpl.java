@@ -50,6 +50,8 @@ public class RescanServiceImpl {
 
     public RescanResult rescan() throws IOException {
 
+        trackRepository.delete(new Track());
+
         Set<String> dbPaths = trackRepository.findAllFilePaths();
         Set<String> fsPaths = new HashSet<>();
 

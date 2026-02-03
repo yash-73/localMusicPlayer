@@ -14,8 +14,8 @@ import java.util.Set;
 public class TrackDTO {
     public Long id;
     public String name;
-    public Album album;
-    public Set<Artist> artists;
+    public AlbumDTO album;
+    public Set<ArtistDTO> artists;
     public Integer durationSeconds;
 
 }

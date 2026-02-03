@@ -1,6 +1,8 @@
 package com.altspot.local.model;
 
 import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,7 +33,9 @@ public class Album {
     @JoinColumn(name = "primary_artist_id")
     private Artist primaryArtist;
 
+
     /* ---------- Contributors ---------- */
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "album_artist",

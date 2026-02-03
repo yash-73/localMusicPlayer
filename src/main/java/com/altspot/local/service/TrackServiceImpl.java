@@ -5,9 +5,7 @@ import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Album;
 import com.altspot.local.model.Track;
-import com.altspot.local.payload.PageResult;
-import com.altspot.local.payload.TrackDTO;
-import com.altspot.local.payload.TrackSummary;
+import com.altspot.local.payload.*;
 import com.altspot.local.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.InputStreamResource;
@@ -29,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TrackServiceImpl implements TrackService {
@@ -103,7 +102,25 @@ public class TrackServiceImpl implements TrackService {
         if (tracks.isEmpty()) throw new GeneralException("No tracks available");
 
         List<TrackDTO> content = tracks.stream()
-                .map(track -> modelMapper.map(track, TrackDTO.class))
+                .map(track -> {
+                    TrackDTO trackDTO = new TrackDTO();
+                    trackDTO.setId(track.getId());
+                    trackDTO.setName(track.getName());
+                    trackDTO.setDurationSeconds(track.getDurationSeconds());
+                    trackDTO.setArtists(
+                            track.getArtists().stream().map(artist -> new ArtistDTO(artist.getId(), artist.getName())).collect(Collectors.toSet())
+                    );
+
+                    ArtistDTO primaryArtist = new  ArtistDTO();
+                    primaryArtist.setId(track.getAlbum().getPrimaryArtist().getId());
+                    primaryArtist.setName(track.getAlbum().getPrimaryArtist().getName());
+
+                    trackDTO.setAlbum(new AlbumDTO(track.getAlbum().getId() , track.getAlbum().getName() , primaryArtist));
+
+                    return trackDTO;
+
+
+                })
                 .toList();
 
         PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
