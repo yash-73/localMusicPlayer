@@ -13,11 +13,9 @@ import java.util.Set;
 @AllArgsConstructor
 public class TrackDTO {
     public Long id;
-    public String title;
+    public String name;
     public Album album;
-    public Set<Artist>  artist;
-//    private String genre;
-//    public Integer durationSeconds;
-//    public Integer sampleRate;
-//    private Long fileSize;
+    public Set<Artist> artist;
+    public Integer durationSeconds;
+
 }

@@ -1,5 +1,6 @@
 package com.altspot.local.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +26,12 @@ public class Artist {
     @Column(name = "artist_name", nullable = false, unique = true)
     private String name;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "artists", fetch = FetchType.LAZY)
     private Set<Album> albums = new HashSet<>();
+
+
+    public Artist(String name) {
+        this.name = name;
+    }
 }
