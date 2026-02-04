@@ -1,8 +1,13 @@
 package com.altspot.local.service;
 
 import com.altspot.local.exception.GeneralException;
+import com.altspot.local.exception.ResourceNotFound;
+import com.altspot.local.model.Album;
+import com.altspot.local.model.Artist;
 import com.altspot.local.payload.*;
 import com.altspot.local.repository.AlbumRepository;
+import com.altspot.local.repository.ArtistRepository;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -11,14 +16,21 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AlbumServiceImpl implements AlbumService {
 
+    private final ModelMapper modelMapper;
     private final AlbumRepository albumRepository;
 
-    public AlbumServiceImpl(AlbumRepository albumRepository) {
+    private final ArtistRepository artistRepository;
+
+    public AlbumServiceImpl(ModelMapper modelMapper, AlbumRepository albumRepository,  ArtistRepository artistRepository) {
+        this.modelMapper = modelMapper;
         this.albumRepository = albumRepository;
+        this.artistRepository = artistRepository;
     }
 
     @Override
@@ -56,5 +68,42 @@ public class AlbumServiceImpl implements AlbumService {
         trackResponse.setPageSize(trackPage.getSize());
 
         return trackResponse;
+    }
+
+    @Override
+    public List<AlbumDTO> getAlbumsByKeyword(String keyword) {
+        String normalizedKeyword = keyword == null
+                ? ""
+                : keyword.trim().toLowerCase();
+
+        if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
+
+        List<AlbumSummary> albumSummaries = albumRepository.searchByPrefix(normalizedKeyword);
+        List<AlbumDTO> albums =  albumSummaries.stream().map(album -> {
+            AlbumDTO albumDTO = new AlbumDTO();
+            albumDTO.setId(album.getId());
+            albumDTO.setName(album.getName());
+            albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
+            albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
+            return albumDTO;
+        }).toList();
+        return albums;
+    }
+
+    @Override
+    public Set<AlbumDTO> getAlbumsByArtist(Long artistId) {
+        Artist artist =  artistRepository.findById(artistId).orElse(null);
+        if(artist == null) throw new ResourceNotFound("Artist with artistId: " + artistId + " not found");
+        List<AlbumSummary> albumSummaries = albumRepository.findAllByArtistId(artistId);
+
+        return albumSummaries.stream().map(album -> {
+            AlbumDTO albumDTO = new AlbumDTO();
+            albumDTO.setId(album.getId());
+            albumDTO.setName(album.getName());
+            albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
+            albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
+            return albumDTO;
+        }).collect(Collectors.toSet());
+
     }
 }

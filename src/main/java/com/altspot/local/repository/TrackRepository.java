@@ -52,7 +52,7 @@ select
   t.name as name,
   t.durationSeconds as durationSeconds
 from Track t
-where lower(t.name) like concat(:keyword, '%')
+where lower(t.name) like concat('%' ,  :keyword, '%')
 """)
     List<TrackSummary> searchByPrefix(@Param("keyword") String keyword);
 
