@@ -55,26 +55,15 @@ public class TrackController {
         return ResponseEntity.ok(result);
     }
 
-//    @GetMapping("get/albums")
-//    public ResponseEntity<PageResult<AlbumDTO>> getAllAlbums(
-//            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER , required = false) Integer pageNumber,
-//            @RequestParam(name = "pageSize" , defaultValue = AppConstants.PAGE_SIZE , required = false) Integer pageSize,
-//            @RequestParam(name = "sortBy" , defaultValue = AppConstants.SORT_BY_ALBUM , required = false) String sortBy,
-//            @RequestParam(name = "sortDirection" , defaultValue = AppConstants.SORT_DIR , required = false) String sortDirection
-//    ) throws IOException {
-//        PageResult<AlbumDTO> result = trackService.getAlbums(pageNumber, pageSize, sortBy, sortDirection);
-//        return ResponseEntity.ok(result);
-//    }
-//
-//    public ResponseEntity<PageResult<ArtistDTO>> getArtists(
-//            @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER , required = false) Integer pageNumber,
-//            @RequestParam(name = "pageSize" , defaultValue = AppConstants.PAGE_SIZE , required = false) Integer pageSize,
-//            @RequestParam(name = "sortBy" , defaultValue = AppConstants.SORT_BY_ARTIST , required = false) String sortBy,
-//            @RequestParam(name = "sortDirection" , defaultValue = AppConstants.SORT_DIR , required = false) String sortDirection
-//    ){
-//        PageResult<ArtistDTO> result = trackService.getArtists(pageNumber, pageSize, sortBy, sortDirection);
-//        return ResponseEntity.ok(result);
-//    }
+    @GetMapping("/get/artist/{artistId}")
+    public ResponseEntity<List<TrackDTO>> getTracksByArtistId(
+            @PathVariable Long artistId
+    ){
+        List<TrackDTO> result = trackService.getTracksByArtist(artistId);
+        return ResponseEntity.ok(result);
+    }
+
+
 
 
 

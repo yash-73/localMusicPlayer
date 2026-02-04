@@ -57,4 +57,15 @@ where lower(t.name) like concat(:keyword, '%')
     List<TrackSummary> searchByPrefix(@Param("keyword") String keyword);
 
 
+    @Query("""
+        select
+            t.id as id,
+            t.name as name,
+            t.durationSeconds as durationSeconds
+            from Track t
+            join t.artists a
+            where a.id = :artistId
+    """)
+    List<TrackSummary> findAllByArtistId(Long artistId);
+
 }

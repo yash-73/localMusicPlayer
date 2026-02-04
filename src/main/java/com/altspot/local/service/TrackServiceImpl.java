@@ -4,6 +4,7 @@ package com.altspot.local.service;
 import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Album;
+import com.altspot.local.model.Artist;
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.*;
 import com.altspot.local.repository.*;
@@ -141,6 +142,17 @@ public class TrackServiceImpl implements TrackService {
 
         List<TrackSummary> trackSummaries = trackRepository.searchByPrefix(normalizedKeyword);
         List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).toList();
+        return tracks;
+    }
+
+    @Override
+    public List<TrackDTO> getTracksByArtist(Long artistId) {
+        if(artistId == null) throw new GeneralException("Artist id is null");
+        Artist artist = artistRepository.findById(artistId).orElse(null);
+        if(artist == null) throw new ResourceNotFound("Artist with id: " + artistId + " not found");
+
+        List<TrackSummary> trackSummaries = trackRepository.findAllByArtistId(artistId);
+        List<TrackDTO> tracks = trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).toList();
         return tracks;
     }
 

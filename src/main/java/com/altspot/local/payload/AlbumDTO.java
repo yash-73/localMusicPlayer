@@ -12,6 +12,7 @@ public class AlbumDTO {
 
     private Long id;
     private String name;
-    private ArtistDTO primaryArtist;
+    private Long primaryArtistId;
+    private String primaryArtistName;
 
 }

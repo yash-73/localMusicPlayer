@@ -19,6 +19,8 @@ public interface TrackService {
     List<TrackDTO> getTracksByAlbum(Long albumId);
 
     List<TrackDTO> getTracksByKeyword(String keyword);
+
+    List<TrackDTO> getTracksByArtist(Long artistId);
 //
 //    PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
 //
