@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 public interface TrackService {
 
@@ -14,6 +15,10 @@ public interface TrackService {
     ResponseEntity<Resource> stream(Long trackId, String range) throws IOException;
 //
     PageResult<TrackDTO> getTracks(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
+
+    List<TrackDTO> getTracksByAlbum(Long albumId);
+
+    List<TrackDTO> getTracksByKeyword(String keyword);
 //
 //    PageResult<AlbumDTO> getAlbums(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
 //

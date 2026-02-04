@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -95,7 +96,7 @@ public class TrackServiceImpl implements TrackService {
 
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
-        Page<TrackSummary> trackPage = trackRepository.findAllProjectedBy(pageDetails);
+        Page<TrackSummary> trackPage = trackRepository.findAllProjected(pageDetails);
 
         List<TrackSummary> tracks = trackPage.getContent();
 
@@ -107,19 +108,7 @@ public class TrackServiceImpl implements TrackService {
                     trackDTO.setId(track.getId());
                     trackDTO.setName(track.getName());
                     trackDTO.setDurationSeconds(track.getDurationSeconds());
-                    trackDTO.setArtists(
-                            track.getArtists().stream().map(artist -> new ArtistDTO(artist.getId(), artist.getName())).collect(Collectors.toSet())
-                    );
-
-                    ArtistDTO primaryArtist = new  ArtistDTO();
-                    primaryArtist.setId(track.getAlbum().getPrimaryArtist().getId());
-                    primaryArtist.setName(track.getAlbum().getPrimaryArtist().getName());
-
-                    trackDTO.setAlbum(new AlbumDTO(track.getAlbum().getId() , track.getAlbum().getName() , primaryArtist));
-
                     return trackDTO;
-
-
                 })
                 .toList();
 
@@ -132,6 +121,27 @@ public class TrackServiceImpl implements TrackService {
         trackResponse.setPageSize(trackPage.getSize());
 
         return trackResponse;
+    }
+
+    @Override
+    public List<TrackDTO> getTracksByAlbum(Long albumId) {
+        Album album =  albumRepository.findById(albumId).orElse(null);
+        if(album == null) throw new ResourceNotFound("Album with albumId: " + albumId + " not found");
+        List<TrackSummary> trackSummaries = trackRepository.findAllByAlbumId(albumId);
+        return trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TrackDTO> getTracksByKeyword(String keyword){
+        String normalizedKeyword = keyword == null
+                ? ""
+                : keyword.trim().toLowerCase();
+
+        if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
+
+        List<TrackSummary> trackSummaries = trackRepository.searchByPrefix(normalizedKeyword);
+        List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).toList();
+        return tracks;
     }
 
     private String getFilePathFromDB(Long trackId) {
