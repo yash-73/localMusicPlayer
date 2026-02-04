@@ -8,7 +8,5 @@ import java.util.Set;
 public interface TrackSummary {
     Long getId();
     String getName();
-    Album getAlbum();
-    Set<Artist> getArtists();
     Integer getDurationSeconds();
 }

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("tracks")
@@ -35,6 +36,22 @@ public class TrackController {
             @RequestParam(name = "sortDirection" , defaultValue = AppConstants.SORT_DIR , required = false) String sortDirection
     ) throws IOException {
         PageResult<TrackDTO> result = trackService.getTracks(pageNumber , pageSize, sortBy , sortDirection);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("get/album/{albumId}")
+    public ResponseEntity<List<TrackDTO>> getTracksByAlbum(
+            @PathVariable Long albumId
+    ){
+        List<TrackDTO> result = trackService.getTracksByAlbum(albumId);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<TrackDTO>> getTracksByKeyword(
+            @RequestParam(name = "keyword" , required = true) String keyword
+    ){
+        List<TrackDTO> result = trackService.getTracksByKeyword(keyword);
         return ResponseEntity.ok(result);
     }
 
