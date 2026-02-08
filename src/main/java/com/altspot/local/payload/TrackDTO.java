@@ -15,4 +15,6 @@ public class TrackDTO {
     public Long id;
     public String name;
     public Integer durationSeconds;
+    public String albumName;
+    public Set<ArtistDTO> artists;
 }

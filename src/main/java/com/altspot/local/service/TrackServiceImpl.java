@@ -109,6 +109,17 @@ public class TrackServiceImpl implements TrackService {
                     trackDTO.setId(track.getId());
                     trackDTO.setName(track.getName());
                     trackDTO.setDurationSeconds(track.getDurationSeconds());
+                    trackDTO.setAlbumName(track.getAlbumName());
+
+                    List<ArtistSummary> artists = trackRepository.findArtistsByTrackId(track.getId());
+                    trackDTO.setArtists(
+                            artists.stream().map(artist -> {
+                                ArtistDTO artistDTO = new ArtistDTO();
+                                artistDTO.setId(artist.getId());
+                                artistDTO.setName(artist.getName());
+                                return artistDTO;
+                            }).collect(Collectors.toSet())
+                    );
                     return trackDTO;
                 })
                 .toList();
@@ -129,7 +140,25 @@ public class TrackServiceImpl implements TrackService {
         Album album =  albumRepository.findById(albumId).orElse(null);
         if(album == null) throw new ResourceNotFound("Album with albumId: " + albumId + " not found");
         List<TrackSummary> trackSummaries = trackRepository.findAllByAlbumId(albumId);
-        return trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).collect(Collectors.toList());
+        return trackSummaries.stream().map(trackSummary -> {
+            TrackDTO trackDTO = new TrackDTO();
+            trackDTO.setId(trackSummary.getId());
+            trackDTO.setName(trackSummary.getName());
+            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
+            trackDTO.setAlbumName(trackSummary.getAlbumName());
+            List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(trackSummary.getId());
+            trackDTO.setArtists(artistSummaries.stream()
+                    .map(artistSummary ->  {
+
+                        ArtistDTO artistDTO = new ArtistDTO();
+                        artistDTO.setId(artistSummary.getId());
+                        artistDTO.setName(artistSummary.getName());
+                        return artistDTO;
+
+                    }).collect(Collectors.toSet()));
+
+            return trackDTO;
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -141,7 +170,23 @@ public class TrackServiceImpl implements TrackService {
         if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
 
         List<TrackSummary> trackSummaries = trackRepository.searchByPrefix(normalizedKeyword);
-        List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).toList();
+        List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> {
+            TrackDTO trackDTO = new TrackDTO();
+            trackDTO.setId(trackSummary.getId());
+            trackDTO.setName(trackSummary.getName());
+            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
+            trackDTO.setAlbumName(trackSummary.getAlbumName());
+            List<ArtistSummary> artists = trackRepository.findArtistsByTrackId(trackSummary.getId());
+            trackDTO.setArtists(
+                    artists.stream().map(artist -> {
+                        ArtistDTO artistDTO = new ArtistDTO();
+                        artistDTO.setId(artist.getId());
+                        artistDTO.setName(artist.getName());
+                        return artistDTO;
+                    }).collect(Collectors.toSet())
+            );
+            return trackDTO;
+        }).toList();
         return tracks;
     }
 
@@ -152,7 +197,20 @@ public class TrackServiceImpl implements TrackService {
         if(artist == null) throw new ResourceNotFound("Artist with id: " + artistId + " not found");
 
         List<TrackSummary> trackSummaries = trackRepository.findAllByArtistId(artistId);
-        List<TrackDTO> tracks = trackSummaries.stream().map(trackSummary -> modelMapper.map(trackSummary, TrackDTO.class)).toList();
+        List<TrackDTO> tracks = trackSummaries.stream().map(trackSummary -> {
+            TrackDTO trackDTO = new TrackDTO();
+            trackDTO.setId(trackSummary.getId());
+            trackDTO.setName(trackSummary.getName());
+            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
+            trackDTO.setAlbumName(trackSummary.getAlbumName());
+
+            List<ArtistSummary> artists = trackRepository.findArtistsByTrackId(trackSummary.getId());
+            trackDTO.setArtists(artists.stream()
+                    .map(artistSummary -> modelMapper.map(artistSummary, ArtistDTO.class))
+                    .collect(Collectors.toSet()));
+
+            return trackDTO;
+        }).toList();
         return tracks;
     }
 

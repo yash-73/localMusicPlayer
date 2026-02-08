@@ -33,4 +33,5 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
     where lower(ar.name) like concat('%' ,  :keyword, '%')
 """)
     List<ArtistSummary> searchByPrefix(@Param("keyword") String keyword);
+
 }

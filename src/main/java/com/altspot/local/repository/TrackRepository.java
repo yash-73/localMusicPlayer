@@ -1,6 +1,7 @@
 package com.altspot.local.repository;
 
 import com.altspot.local.model.Track;
+import com.altspot.local.payload.ArtistSummary;
 import com.altspot.local.payload.TrackSummary;
 
 import org.springframework.data.domain.Page;
@@ -39,8 +40,10 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
 select
   t.id as id,
   t.name as name,
-  t.durationSeconds as durationSeconds
+  t.durationSeconds as durationSeconds,
+  al.name as albumName
 from Track t
+left join t.album  al
 where t.album.id = :albumId
 """)
     List<TrackSummary> findAllByAlbumId(@Param("albumId") Long albumId);
@@ -67,5 +70,17 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
             where a.id = :artistId
     """)
     List<TrackSummary> findAllByArtistId(Long artistId);
+
+
+    @Query("""
+    select
+        a.id as artistId,
+        a.name as artistName
+    from Track t
+    join t.artists a
+    where t.id = :trackId
+""")
+    List<ArtistSummary> findArtistsByTrackId(@Param("trackId") Long trackId);
+
 
 }
