@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,6 +52,30 @@ public class TrackServiceImpl implements TrackService {
         this.trackArtistMaintenanceRepository = trackArtistMaintenanceRepository;
         this.albumArtistMaintenanceRepository = albumArtistMaintenanceRepository;
 
+    }
+
+    @Override
+    public TrackDTO getTrackById(Long id){
+        TrackSummary trackSummary = trackRepository.getTrackSummaryById(id);
+        TrackDTO trackDTO = new TrackDTO();
+        if(trackSummary == null){ throw new ResourceNotFound("Track not found"); }
+        trackDTO.setId(trackSummary.getId());
+        trackDTO.setName(trackSummary.getName());
+        trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
+        trackDTO.setAlbumName(trackSummary.getAlbumName());
+
+        List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(id);
+        trackDTO.setArtists(
+                artistSummaries.stream().map(artistSummary -> {
+                    ArtistDTO artistDTO = new ArtistDTO();
+                    artistDTO.setId(artistSummary.getArtistId());
+                    artistDTO.setName(artistSummary.getArtistName());
+                    return artistDTO;
+                })
+                        .collect(Collectors.toSet())
+        );
+
+        return trackDTO;
     }
 
     @Override
@@ -107,7 +133,7 @@ public class TrackServiceImpl implements TrackService {
                 .map(track -> {
                     TrackDTO trackDTO = new TrackDTO();
                     trackDTO.setId(track.getId());
-                    trackDTO.setName(track.getName());
+                    trackDTO.setName(getTrackName(track.getName()));
                     trackDTO.setDurationSeconds(track.getDurationSeconds());
                     trackDTO.setAlbumName(track.getAlbumName());
 
@@ -115,8 +141,8 @@ public class TrackServiceImpl implements TrackService {
                     trackDTO.setArtists(
                             artists.stream().map(artist -> {
                                 ArtistDTO artistDTO = new ArtistDTO();
-                                artistDTO.setId(artist.getId());
-                                artistDTO.setName(artist.getName());
+                                artistDTO.setId(artist.getArtistId());
+                                artistDTO.setName(artist.getArtistName());
                                 return artistDTO;
                             }).collect(Collectors.toSet())
                     );
@@ -143,7 +169,7 @@ public class TrackServiceImpl implements TrackService {
         return trackSummaries.stream().map(trackSummary -> {
             TrackDTO trackDTO = new TrackDTO();
             trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(trackSummary.getName());
+            trackDTO.setName(getTrackName(trackSummary.getName()));
             trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
             trackDTO.setAlbumName(trackSummary.getAlbumName());
             List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(trackSummary.getId());
@@ -151,8 +177,8 @@ public class TrackServiceImpl implements TrackService {
                     .map(artistSummary ->  {
 
                         ArtistDTO artistDTO = new ArtistDTO();
-                        artistDTO.setId(artistSummary.getId());
-                        artistDTO.setName(artistSummary.getName());
+                        artistDTO.setId(artistSummary.getArtistId());
+                        artistDTO.setName(artistSummary.getArtistName());
                         return artistDTO;
 
                     }).collect(Collectors.toSet()));
@@ -173,15 +199,15 @@ public class TrackServiceImpl implements TrackService {
         List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> {
             TrackDTO trackDTO = new TrackDTO();
             trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(trackSummary.getName());
+            trackDTO.setName(getTrackName(trackSummary.getName()));
             trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
             trackDTO.setAlbumName(trackSummary.getAlbumName());
             List<ArtistSummary> artists = trackRepository.findArtistsByTrackId(trackSummary.getId());
             trackDTO.setArtists(
                     artists.stream().map(artist -> {
                         ArtistDTO artistDTO = new ArtistDTO();
-                        artistDTO.setId(artist.getId());
-                        artistDTO.setName(artist.getName());
+                        artistDTO.setId(artist.getArtistId());
+                        artistDTO.setName(artist.getArtistName());
                         return artistDTO;
                     }).collect(Collectors.toSet())
             );
@@ -200,7 +226,7 @@ public class TrackServiceImpl implements TrackService {
         List<TrackDTO> tracks = trackSummaries.stream().map(trackSummary -> {
             TrackDTO trackDTO = new TrackDTO();
             trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(trackSummary.getName());
+            trackDTO.setName(getTrackName(trackSummary.getName()));
             trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
             trackDTO.setAlbumName(trackSummary.getAlbumName());
 
@@ -224,6 +250,12 @@ public class TrackServiceImpl implements TrackService {
 
     private String emptyToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private String getTrackName(String name){
+        int index = name.indexOf("-");
+        if(index == -1) return name;
+        return name.substring(0, index);
     }
 
 

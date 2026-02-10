@@ -27,13 +27,28 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
     int countByAlbum_Id(Long albumId);
 
     @Query("""
-        select
+    select
         t.id as id,
         t.name as name,
-        t.durationSeconds as durationSeconds
-        from Track t
+        t.durationSeconds as durationSeconds,
+        al.name as albumName
+            from Track t
+            join t.album al
+            where t.id = :id
     """)
+    TrackSummary getTrackSummaryById(Long id);
+
+    @Query("""
+    select
+        t.id as id,
+        t.name as name,
+        t.durationSeconds as durationSeconds,
+        al.name as albumName
+    from Track t
+    join t.album al
+""")
     Page<TrackSummary> findAllProjected(Pageable pageable);
+
 
 
     @Query("""
@@ -81,6 +96,8 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
     where t.id = :trackId
 """)
     List<ArtistSummary> findArtistsByTrackId(@Param("trackId") Long trackId);
+
+
 
 
 }

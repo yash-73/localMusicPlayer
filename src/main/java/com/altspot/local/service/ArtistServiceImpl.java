@@ -39,8 +39,8 @@ public class ArtistServiceImpl implements  ArtistService {
 
 
                     ArtistDTO artistDTO = new ArtistDTO();
-                    artistDTO.setId(artist.getId());
-                    artistDTO.setName(artist.getName());
+                    artistDTO.setId(artist.getArtistId());
+                    artistDTO.setName(artist.getArtistName());
                     return artistDTO;
                 })
                 .toList();
@@ -67,8 +67,8 @@ public class ArtistServiceImpl implements  ArtistService {
         List<ArtistSummary> albumSummaries = artistRepository.searchByPrefix(normalizedKeyword);
         List<ArtistDTO> artists =  albumSummaries.stream().map(artist -> {
             ArtistDTO artistDTO = new ArtistDTO();
-            artistDTO.setId(artist.getId());
-            artistDTO.setName(artist.getName());
+            artistDTO.setId(artist.getArtistId());
+            artistDTO.setName(artist.getArtistName());
 
             return artistDTO;
         }).toList();

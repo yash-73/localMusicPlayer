@@ -28,6 +28,12 @@ public class TrackController {
         return trackService.stream(id, range);
     }
 
+    @GetMapping("/get/track/{id}")
+    public ResponseEntity<TrackDTO> getTrack(@PathVariable Long id){
+        TrackDTO track = trackService.getTrackById(id);
+        return  ResponseEntity.ok(track);
+    }
+
     @GetMapping("get/tracks")
     public ResponseEntity<PageResult<TrackDTO>> getAllTracks(
             @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER , required = false) Integer pageNumber,
