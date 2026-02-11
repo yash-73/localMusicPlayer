@@ -28,6 +28,9 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @OneToMany(mappedBy = "user")
+    private Set<Playlist> playlists = new HashSet<>();
+
     @Override
     public int hashCode(){
         return Objects.hash(id, username, password, roles);

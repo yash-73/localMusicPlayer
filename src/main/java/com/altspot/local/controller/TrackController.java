@@ -31,7 +31,7 @@ public class TrackController {
     @GetMapping("/get/track/{id}")
     public ResponseEntity<TrackDTO> getTrack(@PathVariable Long id){
         TrackDTO track = trackService.getTrackById(id);
-        return  ResponseEntity.ok(track);
+        return  ResponseEntity.ok(track);   
     }
 
     @GetMapping("get/tracks")

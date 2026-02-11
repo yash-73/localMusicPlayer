@@ -2,6 +2,7 @@ package com.altspot.local.repository;
 
 import com.altspot.local.model.Track;
 import com.altspot.local.payload.ArtistSummary;
+import com.altspot.local.payload.TrackArtistFlatRow;
 import com.altspot.local.payload.TrackSummary;
 
 import org.springframework.data.domain.Page;
@@ -97,6 +98,16 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
 """)
     List<ArtistSummary> findArtistsByTrackId(@Param("trackId") Long trackId);
 
+
+    @Query("""
+        select ta.track.id as trackId,
+           a.id as artistId,
+           a.name as artistName
+    from TrackArtist ta
+    join ta.artist a
+    where ta.track.id in :trackIds
+""")
+    List<TrackArtistFlatRow> findArtistsByTrackIds(List<Long> trackIds);
 
 
 
