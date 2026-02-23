@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Artwork ###
+/src/main/resources/static/album_art

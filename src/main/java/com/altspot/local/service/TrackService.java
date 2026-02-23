@@ -16,7 +16,7 @@ public interface TrackService {
 //
     PageResult<TrackDTO> getTracks(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) throws IOException;
 
-    List<TrackDTO> getTracksByAlbum(Long albumId);
+    List<AlbumTrackDTO> getTracksByAlbum(Long albumId);
 
     List<TrackDTO> getTracksByKeyword(String keyword);
 

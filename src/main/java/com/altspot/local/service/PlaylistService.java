@@ -1,5 +1,6 @@
 package com.altspot.local.service;
 
+import com.altspot.local.payload.PlaylistDTO;
 import com.altspot.local.payload.PlaylistItemDTO;
 import com.altspot.local.payload.PlaylistMeta;
 import org.springframework.security.core.Authentication;
@@ -11,5 +12,9 @@ public interface PlaylistService {
     List<PlaylistMeta> getAllPlaylistMetas(Authentication authentication);
 
     List<PlaylistItemDTO> getAllPlaylistItemsForPlaylist(Long playlistId);
+
+    PlaylistDTO getPlaylistMetaById(Long playlistId);
+
+    PlaylistDTO createNewPlaylist(Authentication authentication , PlaylistMeta playlistMeta);
 
 }

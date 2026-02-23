@@ -46,10 +46,10 @@ public class TrackController {
     }
 
     @GetMapping("get/album/{albumId}")
-    public ResponseEntity<List<TrackDTO>> getTracksByAlbum(
+    public ResponseEntity<List<AlbumTrackDTO>> getTracksByAlbum(
             @PathVariable Long albumId
     ){
-        List<TrackDTO> result = trackService.getTracksByAlbum(albumId);
+        List<AlbumTrackDTO> result = trackService.getTracksByAlbum(albumId);
         return ResponseEntity.ok(result);
     }
 

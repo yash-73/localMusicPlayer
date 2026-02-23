@@ -28,12 +28,17 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+
     private Set<Playlist> playlists = new HashSet<>();
 
     @Override
     public int hashCode(){
-        return Objects.hash(id, username, password, roles);
+        return Objects.hash(id, username);
     }
 
     @Override
@@ -41,10 +46,7 @@ public class User {
         if(this == o) return true;
         if(o == null || this.getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(this.id, user.id) &&
-                Objects.equals(this.username, user.username) &&
-                Objects.equals(this.password, user.password) &&
-                Objects.equals(this.roles, user.roles);
+        return Objects.equals(this.username, user.username);
     }
 
 

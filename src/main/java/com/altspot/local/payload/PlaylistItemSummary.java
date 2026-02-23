@@ -6,6 +6,7 @@ public interface PlaylistItemSummary {
     Long getPosition();
     Long getTrackId();
     String getTrackName();
+    Integer getDurationSeconds();
     Long getAlbumId();
     String getAlbumName();
 

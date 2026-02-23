@@ -19,8 +19,8 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
     Optional<Artist> findByName(String name);
 
     @Query("""
-    select ar.id as id,
-        ar.name as name
+    select ar.id as artistId,
+        ar.name as artistName
             from Artist ar
     """)
     Page<ArtistSummary> findAllProjectedBy(Pageable pageDetails);

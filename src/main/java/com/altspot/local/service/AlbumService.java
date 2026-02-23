@@ -13,4 +13,6 @@ public interface AlbumService {
     List<AlbumDTO> getAlbumsByKeyword(String keyword);
 
     Set<AlbumDTO> getAlbumsByArtist(Long artistId);
+
+    AlbumDTO getAlbumById(Long albumId);
 }

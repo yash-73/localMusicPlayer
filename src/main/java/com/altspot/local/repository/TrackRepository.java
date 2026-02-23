@@ -1,6 +1,7 @@
 package com.altspot.local.repository;
 
 import com.altspot.local.model.Track;
+import com.altspot.local.payload.AlbumTrackSummary;
 import com.altspot.local.payload.ArtistSummary;
 import com.altspot.local.payload.TrackArtistFlatRow;
 import com.altspot.local.payload.TrackSummary;
@@ -57,12 +58,13 @@ select
   t.id as id,
   t.name as name,
   t.durationSeconds as durationSeconds,
+  t.albumPosition as albumPosition,
   al.name as albumName
 from Track t
 left join t.album  al
 where t.album.id = :albumId
 """)
-    List<TrackSummary> findAllByAlbumId(@Param("albumId") Long albumId);
+    List<AlbumTrackSummary> findAllByAlbumId(@Param("albumId") Long albumId);
 
 
     @Query("""
@@ -100,14 +102,14 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
 
 
     @Query("""
-        select ta.track.id as trackId,
+        select t.id as trackId,
            a.id as artistId,
            a.name as artistName
-    from TrackArtist ta
-    join ta.artist a
-    where ta.track.id in :trackIds
+    from Track t
+    join t.artists a
+    where t.id in :trackIds
 """)
-    List<TrackArtistFlatRow> findArtistsByTrackIds(List<Long> trackIds);
+    List<TrackArtistFlatRow> findArtistsByTrackIds(@Param("trackIds")List<Long> trackIds);
 
 
 

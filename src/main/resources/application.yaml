@@ -9,7 +9,7 @@ spring:
       password: awesome
 
   datasource:
-    url: jdbc:mysql://localhost:3306/localPlayer
+    url: jdbc:mysql://localhost:3306/newLocalPlayer
     username: springuser
     password: your_password
 

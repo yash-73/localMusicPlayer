@@ -162,12 +162,12 @@ public class TrackServiceImpl implements TrackService {
     }
 
     @Override
-    public List<TrackDTO> getTracksByAlbum(Long albumId) {
+    public List<AlbumTrackDTO> getTracksByAlbum(Long albumId) {
         Album album =  albumRepository.findById(albumId).orElse(null);
         if(album == null) throw new ResourceNotFound("Album with albumId: " + albumId + " not found");
-        List<TrackSummary> trackSummaries = trackRepository.findAllByAlbumId(albumId);
+        List<AlbumTrackSummary> albumTrackSummaries = trackRepository.findAllByAlbumId(albumId);
 
-        List<Long> trackIds = trackSummaries.stream().map(TrackSummary::getId).toList();
+        List<Long> trackIds = albumTrackSummaries.stream().map(AlbumTrackSummary::getId).toList();
         List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
 
         Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
@@ -178,16 +178,21 @@ public class TrackServiceImpl implements TrackService {
                     .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
         }
 
-        return trackSummaries.stream().map(trackSummary -> {
-            TrackDTO trackDTO = new TrackDTO();
-            trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(getTrackName(trackSummary.getName()));
-            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
-            trackDTO.setAlbumName(trackSummary.getAlbumName());
-            trackDTO.setArtists(artistMap.getOrDefault(trackSummary.getId() , Set.of()));
+        List<AlbumTrackDTO> dtos = new ArrayList<>(albumTrackSummaries.stream().map(albumTrackSummary -> {
+            AlbumTrackDTO trackDTO = new AlbumTrackDTO();
+            trackDTO.setId(albumTrackSummary.getId());
+            trackDTO.setName(getTrackName(albumTrackSummary.getName()));
+            trackDTO.setAlbumPosition(albumTrackSummary.getAlbumPosition());
+            trackDTO.setDurationSeconds(albumTrackSummary.getDurationSeconds());
+            trackDTO.setAlbumName(albumTrackSummary.getAlbumName());
+            trackDTO.setArtists(artistMap.getOrDefault(albumTrackSummary.getId(), Set.of()));
 
             return trackDTO;
-        }).collect(Collectors.toList());
+        }).toList());
+
+        dtos.sort(Comparator.comparing(AlbumTrackDTO::getAlbumPosition));
+        return dtos;
+
     }
 
     @Override

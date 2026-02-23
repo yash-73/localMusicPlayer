@@ -1,12 +1,11 @@
 package com.altspot.local.controller;
 
+import com.altspot.local.payload.PlaylistDTO;
 import com.altspot.local.payload.PlaylistMeta;
 import com.altspot.local.service.PlaylistService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,11 +21,22 @@ public class PlaylistController {
     }
 
     @GetMapping("/get/playlists")
-    public ResponseEntity<List<PlaylistMeta>> getPlaylistMeta(Authentication authentication) {
+    public ResponseEntity<List<PlaylistMeta>> getPlaylistMetas(Authentication authentication) {
         List<PlaylistMeta> result = playlistService.getAllPlaylistMetas(authentication);
         return ResponseEntity.ok(result);
     }
 
-//    public ResponseEntity<> getPlaylistMetas(Authentication authentication) {/}
+    @GetMapping("get/playlist/{playlistId}")
+    public ResponseEntity<PlaylistDTO> getPlaylistDataById(@RequestParam Long playlistId) {
+        PlaylistDTO result = playlistService.getPlaylistMetaById(playlistId);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("create")
+    public ResponseEntity<PlaylistDTO> createNewPlaylist(@RequestBody PlaylistMeta playlistMeta, Authentication authentication) {
+        PlaylistDTO result = playlistService.createNewPlaylist(authentication , playlistMeta);
+        return ResponseEntity.ok(result);
+    }
+
 
 }

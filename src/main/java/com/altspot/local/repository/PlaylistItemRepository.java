@@ -16,8 +16,9 @@ public interface PlaylistItemRepository extends JpaRepository<PlaylistItem, Long
             pl.id as playlistItemId,
             pl.position as position,
             pl.track.name as trackName,
-            pl.track.id as trackId
+            pl.track.id as trackId,
+            pl.track.durationSeconds as durationSeconds
             from PlaylistItem pl
-            where pl.playlist_id = :playlistId""")
+            where pl.playlist.id = :playlistId""")
     List<PlaylistItemSummary> findAllByPlaylistId(Long playlistId);
 }

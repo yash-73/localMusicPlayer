@@ -33,6 +33,12 @@ public class AlbumController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/get/album/{albumId}")
+    public ResponseEntity<AlbumDTO> getAlbumById(@PathVariable Long albumId) {
+        AlbumDTO album = albumService.getAlbumById(albumId);
+        return ResponseEntity.ok(album);
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<AlbumDTO>> getAlbumsByKeyword(
             @RequestParam(name = "keyword" , required = true) String keyword

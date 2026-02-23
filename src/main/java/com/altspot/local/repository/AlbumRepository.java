@@ -17,7 +17,11 @@ import java.util.Optional;
 @Repository
 public interface AlbumRepository extends JpaRepository<Album, Long> {
 
-    Optional<Album> findByNameAndPrimaryArtist(String albumName, Artist primaryArtist);
+
+    Optional<Album> findByNameAndPrimaryArtist_Id(
+            @Param("albumName")String albumName,
+            @Param("primaryArtistId") Long primaryArtistId
+    );
 
     @Query("""
     select
@@ -29,6 +33,18 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
      join al.primaryArtist pa
 """)
     Page<AlbumSummary> findAllProjectedBy(Pageable pageDetails);
+
+    @Query("""
+    select
+        al.id as id,
+        al.name as name,
+        pa.id as primaryArtist,
+        pa.name as primaryArtistName
+        from Album al
+        join al.primaryArtist pa
+        where al.id = :albumId
+    """)
+    Optional<AlbumSummary> findAlbumProjectedBy(Long albumId);
 
 
 
@@ -53,6 +69,13 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
     where lower(al.name) like concat('%' ,  :keyword, '%')
 """)
     List<AlbumSummary> searchByPrefix(@Param("keyword") String keyword);
+
+
+    Optional<Album> findByNameAndPrimaryArtist_IdAndReleaseYear(
+            String name,
+            Long primaryArtistId,
+            Integer releaseYear
+    );
 
 
 }

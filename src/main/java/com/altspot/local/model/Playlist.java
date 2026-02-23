@@ -11,6 +11,7 @@ import java.util.Objects;
 @Entity
 @Table(
         name = "playlist",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "name"}),
         indexes = {
                 @Index(name = "idx_playlist_user", columnList = "user_id")
         }

@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,8 +16,8 @@ public class PlaylistItemDTO {
     Long position;
     Long trackId;
     String trackName;
-    Long durationSeconds;
+    Integer durationSeconds;
     Long albumId;
     String albumName;
-    List<ArtistDTO> artists;
+    Set<ArtistDTO> artists;
 }

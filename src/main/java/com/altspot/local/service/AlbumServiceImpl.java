@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -105,5 +106,18 @@ public class AlbumServiceImpl implements AlbumService {
             return albumDTO;
         }).collect(Collectors.toSet());
 
+    }
+
+    @Override
+    public AlbumDTO getAlbumById(Long albumId) {
+        Optional<AlbumSummary> albumSummary = albumRepository.findAlbumProjectedBy(albumId);
+        if (albumSummary.isEmpty()) throw new ResourceNotFound("Album with albumId: " + albumId + " not found");
+        AlbumSummary summary = albumSummary.get();
+        AlbumDTO albumDTO = new AlbumDTO();
+        albumDTO.setId(summary.getId());
+        albumDTO.setName(summary.getName());
+        albumDTO.setPrimaryArtistId(summary.getPrimaryArtistId());
+        albumDTO.setPrimaryArtistName(summary.getPrimaryArtistName());
+        return albumDTO;
     }
 }

@@ -13,7 +13,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "album")
+@Table(name = "album" ,
+    uniqueConstraints = @UniqueConstraint(columnNames = {"album_name" , "primary_artist_id" , "release_year"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,6 +34,12 @@ public class Album {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "primary_artist_id")
     private Artist primaryArtist;
+
+    @Column(name = "album_art_path")
+    private String albumArtPath;
+
+    @Column(name = "release_year")
+    private Integer releaseYear;
 
 
     /* ---------- Contributors ---------- */

@@ -21,9 +21,15 @@ public class RescanController {
     }
 
     @PostMapping("/rescan")
-    public ResponseEntity<RescanResult> rescan() throws IOException {
+    public ResponseEntity<RescanResult> rescan() throws Exception {
         return ResponseEntity.ok(rescanService.rescan());
     }
+
+//    @PostMapping("/refill/track-pos-album-year")
+//    public ResponseEntity<Boolean> refillTrackPosAlbumYear() throws IOException {
+//            Boolean result = rescanService.backfillMetadataInBatches();
+//            return ResponseEntity.ok(result);
+//    }
 
 }
 

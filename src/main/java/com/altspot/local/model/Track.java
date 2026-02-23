@@ -33,6 +33,9 @@ public class Track {
     @JoinColumn(name = "album_id")
     private Album album;
 
+    @Column(name = "album_position")
+    private Integer albumPosition;
+
     /* ---------- Artist relationship ---------- */
     @ManyToMany
     @JoinTable(
