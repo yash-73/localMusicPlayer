@@ -14,5 +14,7 @@ public class AlbumDTO {
     private String name;
     private Long primaryArtistId;
     private String primaryArtistName;
+    private Integer releaseYear;
+    private String albumArtUrl;
 
 }

@@ -28,7 +28,9 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
      al.id as id,
      al.name as name,
      pa.id as primaryArtistId,
-     pa.name as primaryArtistName
+     pa.name as primaryArtistName,
+     al.albumArtPath as albumArtPath,
+     al.releaseYear as releaseYear
      from Album al
      join al.primaryArtist pa
 """)
@@ -39,7 +41,9 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
         al.id as id,
         al.name as name,
         pa.id as primaryArtist,
-        pa.name as primaryArtistName
+        pa.name as primaryArtistName,
+        al.albumArtPath as albumArtPath,
+        al.releaseYear as releaseYear
         from Album al
         join al.primaryArtist pa
         where al.id = :albumId
@@ -53,7 +57,9 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
       al.id as id,
       al.name as name,
       al.primaryArtist.id as primaryArtistId,
-      al.primaryArtist.name as primaryArtistName
+      al.primaryArtist.name as primaryArtistName,
+      al.albumArtPath as albumArtPath,
+      al.releaseYear as releaseYear
     from Album al
     where al.primaryArtist.id = :artistId
 """)
@@ -64,7 +70,9 @@ public interface AlbumRepository extends JpaRepository<Album, Long> {
       al.id as id,
       al.name as name,
       al.primaryArtist.id as primaryArtistId,
-      al.primaryArtist.name as primaryArtsitName
+      al.primaryArtist.name as primaryArtsitName,
+      al.albumArtPath as albumArtPath,
+      al.releaseYear as releaseYear
     from Album al
     where lower(al.name) like concat('%' ,  :keyword, '%')
 """)

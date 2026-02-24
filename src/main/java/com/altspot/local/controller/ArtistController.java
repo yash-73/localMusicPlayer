@@ -6,10 +6,7 @@ import com.altspot.local.payload.ArtistDTO;
 import com.altspot.local.payload.PageResult;
 import com.altspot.local.service.ArtistService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -34,8 +31,16 @@ public class ArtistController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("get/artist/{artistId}")
+    public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Long artistId){
+        ArtistDTO result = artistService.getArtistById(artistId);
+        return ResponseEntity.ok(result);
+    }
+
+
+
     @GetMapping("/search")
-    public ResponseEntity<List<ArtistDTO>> getAlbumsByKeyword(
+    public ResponseEntity<List<ArtistDTO>> getArtistsByKeyword(
             @RequestParam(name = "keyword" , required = true) String keyword
     ){
         List<ArtistDTO> result = artistService.getArtistsByKeyword(keyword);

@@ -27,11 +27,20 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
 
     @Query("""
     select
-      ar.id as id,
-      ar.name as name
+      ar.id as artistId,
+      ar.name as artistName
     from Artist ar
     where lower(ar.name) like concat('%' ,  :keyword, '%')
 """)
     List<ArtistSummary> searchByPrefix(@Param("keyword") String keyword);
+
+    @Query("""
+       select
+          ar.name as artistName,
+             ar.id as artistId
+                from Artist ar
+                   where ar.id = :artistId
+   """)
+    ArtistSummary findProjectedById(@Param("artistId") Long artistId);
 
 }

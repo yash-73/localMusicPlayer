@@ -5,4 +5,5 @@ public interface TrackSummary {
     String getName();
     Integer getDurationSeconds();
     String getAlbumName();
+    Long getAlbumId();
 }

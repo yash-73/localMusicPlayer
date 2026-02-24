@@ -24,5 +24,7 @@ public interface TrackService {
 
     TrackDTO getTrackById(Long trackId);
 
+    List<TrackDTO> getSinglesByArtist(Long artistId);
+
 
 }

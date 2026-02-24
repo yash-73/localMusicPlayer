@@ -9,6 +9,8 @@ import com.altspot.local.model.Track;
 import com.altspot.local.payload.*;
 import com.altspot.local.repository.*;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 @Service
 public class TrackServiceImpl implements TrackService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TrackServiceImpl.class);
+
     private final ModelMapper modelMapper;
     private final TrackRepository trackRepository;
     private final AlbumRepository albumRepository;
@@ -54,25 +58,34 @@ public class TrackServiceImpl implements TrackService {
     @Override
     public TrackDTO getTrackById(Long id){
         TrackSummary trackSummary = trackRepository.getTrackSummaryById(id);
-        TrackDTO trackDTO = new TrackDTO();
         if(trackSummary == null){ throw new ResourceNotFound("Track not found"); }
-        trackDTO.setId(trackSummary.getId());
-        trackDTO.setName(trackSummary.getName());
-        trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
-        trackDTO.setAlbumName(trackSummary.getAlbumName());
 
         List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(id);
-        trackDTO.setArtists(
-                artistSummaries.stream().map(artistSummary -> {
+
+        Set<ArtistDTO> artistDTOs = artistSummaries.stream()
+                .map(artistSummary -> {
                     ArtistDTO artistDTO = new ArtistDTO();
                     artistDTO.setId(artistSummary.getArtistId());
                     artistDTO.setName(artistSummary.getArtistName());
                     return artistDTO;
-                })
-                        .collect(Collectors.toSet())
-        );
+                }).collect(Collectors.toSet());
 
-        return trackDTO;
+        return trackSummaryToDTO(trackSummary , artistDTOs);
+
+    }
+
+    @Override
+    public List<TrackDTO> getSinglesByArtist(Long artistId) {
+        if(artistId == null) throw new GeneralException("Artist id is null");
+        List<TrackSummary> trackSummaries = trackRepository.findAllSinglesByArtistId(artistId);
+
+        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
+
+        return trackSummaries.stream()
+                .map(track ->
+                    trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
+                )
+                .toList();
     }
 
     @Override
@@ -126,28 +139,12 @@ public class TrackServiceImpl implements TrackService {
 
         if (tracks.isEmpty()) throw new GeneralException("No tracks available");
 
-        List<Long> trackIds = tracks.stream().map(TrackSummary::getId).toList();
-        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
-
-        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
-
-        for (var row : trackArtistFlatRows) {
-            artistMap
-                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
-                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
-        }
+        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(tracks);
 
         List<TrackDTO> content = tracks.stream()
-                .map(track -> {
-                    TrackDTO trackDTO = new TrackDTO();
-                    trackDTO.setId(track.getId());
-                    trackDTO.setName(getTrackName(track.getName()));
-                    trackDTO.setDurationSeconds(track.getDurationSeconds());
-                    trackDTO.setAlbumName(track.getAlbumName());
-                    trackDTO.setArtists(artistMap.getOrDefault(track.getId() , Set.of()));
-
-                    return trackDTO;
-                })
+                .map(track ->
+                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
+                )
                 .toList();
 
         PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
@@ -185,6 +182,7 @@ public class TrackServiceImpl implements TrackService {
             trackDTO.setAlbumPosition(albumTrackSummary.getAlbumPosition());
             trackDTO.setDurationSeconds(albumTrackSummary.getDurationSeconds());
             trackDTO.setAlbumName(albumTrackSummary.getAlbumName());
+            trackDTO.setAlbumId(albumTrackSummary.getAlbumId());
             trackDTO.setArtists(artistMap.getOrDefault(albumTrackSummary.getId(), Set.of()));
 
             return trackDTO;
@@ -205,27 +203,13 @@ public class TrackServiceImpl implements TrackService {
 
         List<TrackSummary> trackSummaries = trackRepository.searchByPrefix(normalizedKeyword);
 
-        List<Long> trackIds = trackSummaries.stream().map(TrackSummary::getId).toList();
-        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
+        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
 
-        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
-
-        for (var row : trackArtistFlatRows) {
-            artistMap
-                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
-                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
-        }
-
-        List<TrackDTO> tracks =  trackSummaries.stream().map(trackSummary -> {
-            TrackDTO trackDTO = new TrackDTO();
-            trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(getTrackName(trackSummary.getName()));
-            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
-            trackDTO.setAlbumName(trackSummary.getAlbumName());
-            trackDTO.setArtists(artistMap.getOrDefault(trackSummary.getId() , Set.of()));
-            return trackDTO;
-        }).toList();
-        return tracks;
+        return trackSummaries.stream()
+                .map(track ->
+                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
+                )
+                .toList();
     }
 
     @Override
@@ -236,28 +220,13 @@ public class TrackServiceImpl implements TrackService {
 
         List<TrackSummary> trackSummaries = trackRepository.findAllByArtistId(artistId);
 
-        List<Long> trackIds = trackSummaries.stream().map(TrackSummary::getId).toList();
-        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
+        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
 
-        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
-
-        for (var row : trackArtistFlatRows) {
-            artistMap
-                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
-                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
-        }
-
-        List<TrackDTO> tracks = trackSummaries.stream().map(trackSummary -> {
-            TrackDTO trackDTO = new TrackDTO();
-            trackDTO.setId(trackSummary.getId());
-            trackDTO.setName(getTrackName(trackSummary.getName()));
-            trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
-            trackDTO.setAlbumName(trackSummary.getAlbumName());
-            trackDTO.setArtists(artistMap.getOrDefault(trackSummary.getId() , Set.of()));
-
-            return trackDTO;
-        }).toList();
-        return tracks;
+        return trackSummaries.stream()
+                .map(track ->
+                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
+                )
+                .toList();
     }
 
     private String getFilePathFromDB(Long trackId) {
@@ -278,6 +247,31 @@ public class TrackServiceImpl implements TrackService {
         return name.substring(0, index);
     }
 
+    private TrackDTO trackSummaryToDTO(TrackSummary trackSummary , Set<ArtistDTO> artistDTOS) {
+        TrackDTO trackDTO = new TrackDTO();
+        trackDTO.setId(trackSummary.getId());
+        trackDTO.setName(getTrackName(trackSummary.getName()));
+        trackDTO.setDurationSeconds(trackSummary.getDurationSeconds());
+        trackDTO.setAlbumName(trackSummary.getAlbumName());
+        trackDTO.setAlbumId(trackSummary.getAlbumId());
+        trackDTO.setArtists(artistDTOS);
+
+        return trackDTO;
+    }
+
+    private Map<Long , Set<ArtistDTO>> createArtistMapFromTrackIds(List<TrackSummary> trackSummaries){
+        List<Long> trackIds = trackSummaries.stream().map(TrackSummary::getId).toList();
+        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
+
+        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
+
+        for (var row : trackArtistFlatRows) {
+            artistMap
+                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
+                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
+        }
+        return  artistMap;
+    }
 
 
 }

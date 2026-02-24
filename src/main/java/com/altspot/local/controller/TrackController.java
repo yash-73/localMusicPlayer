@@ -69,9 +69,13 @@ public class TrackController {
         return ResponseEntity.ok(result);
     }
 
-
-
-
+    @GetMapping("get/singles/artist/{artistId}")
+    public ResponseEntity<List<TrackDTO>> getSinglesByArtistId(
+            @PathVariable Long artistId
+    ){
+        List<TrackDTO> result = trackService.getSinglesByArtist(artistId);
+        return ResponseEntity.ok(result);
+    }
 
 
 }

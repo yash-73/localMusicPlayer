@@ -53,6 +53,8 @@ public class AlbumServiceImpl implements AlbumService {
                     AlbumDTO albumDTO = new AlbumDTO();
                     albumDTO.setId(album.getId());
                     albumDTO.setName(album.getName());
+                    albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
+                    albumDTO.setReleaseYear(album.getReleaseYear());
 
                     albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
                     albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
@@ -86,6 +88,8 @@ public class AlbumServiceImpl implements AlbumService {
             albumDTO.setName(album.getName());
             albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
             albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
+            albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
+            albumDTO.setReleaseYear(album.getReleaseYear());
             return albumDTO;
         }).toList();
         return albums;
@@ -103,6 +107,8 @@ public class AlbumServiceImpl implements AlbumService {
             albumDTO.setName(album.getName());
             albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
             albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
+            albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
+            albumDTO.setReleaseYear(album.getReleaseYear());
             return albumDTO;
         }).collect(Collectors.toSet());
 
@@ -118,6 +124,8 @@ public class AlbumServiceImpl implements AlbumService {
         albumDTO.setName(summary.getName());
         albumDTO.setPrimaryArtistId(summary.getPrimaryArtistId());
         albumDTO.setPrimaryArtistName(summary.getPrimaryArtistName());
+        albumDTO.setAlbumArtUrl(summary.getAlbumArtPath());
+        albumDTO.setReleaseYear(summary.getReleaseYear());
         return albumDTO;
     }
 }

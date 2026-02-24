@@ -6,4 +6,5 @@ public interface AlbumTrackSummary {
     Integer getDurationSeconds();
     String getAlbumName();
     Integer getAlbumPosition();
+    Long getAlbumId();
 }

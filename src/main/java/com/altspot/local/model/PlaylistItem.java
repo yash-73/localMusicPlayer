@@ -23,7 +23,6 @@ import java.util.Objects;
                 @Index(name = "idx_playlist_item_track", columnList = "track_id")
         }
 )
-
 @Getter
 @Setter
 @NoArgsConstructor

@@ -4,6 +4,7 @@ import com.altspot.local.config.userdetails.UserDetailsImpl;
 import com.altspot.local.exception.GeneralException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Playlist;
+import com.altspot.local.model.PlaylistItem;
 import com.altspot.local.model.Track;
 import com.altspot.local.model.User;
 import com.altspot.local.payload.*;
@@ -133,6 +134,8 @@ public class PlaylistServiceImpl implements PlaylistService {
 
         return new PlaylistDTO(playlist.getId(), playlist.getName());
     }
+
+
 
 
 }

@@ -39,4 +39,14 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
         where pl.name = :playlistName and pl.user.id = :userId
     """)
     PlaylistMetaSummary findByPlaylistNameAndUserId( @Param("playlistName") String playlistName, @Param("userId") Long userId);
+
+    @Query(
+            """
+            select pl
+            from Playlist pl
+            where pl.id = :playlistId
+"""
+    )
+    Playlist findPlaylistByPlaylistId(Long playlistId);
+
 }

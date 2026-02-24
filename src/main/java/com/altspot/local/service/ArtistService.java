@@ -8,4 +8,5 @@ import java.util.List;
 public interface ArtistService {
     PageResult<ArtistDTO> getArtists(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection);
     List<ArtistDTO> getArtistsByKeyword(String keyword);
+    ArtistDTO getArtistById(Long artistId);
 }

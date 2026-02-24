@@ -33,7 +33,8 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
         t.id as id,
         t.name as name,
         t.durationSeconds as durationSeconds,
-        al.name as albumName
+        al.name as albumName,
+        al.id as albumId
             from Track t
             join t.album al
             where t.id = :id
@@ -45,7 +46,8 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
         t.id as id,
         t.name as name,
         t.durationSeconds as durationSeconds,
-        al.name as albumName
+        al.name as albumName,
+        al.id as albumId
     from Track t
     join t.album al
 """)
@@ -59,9 +61,10 @@ select
   t.name as name,
   t.durationSeconds as durationSeconds,
   t.albumPosition as albumPosition,
-  al.name as albumName
+  al.name as albumName,
+  al.id as albumId
 from Track t
-left join t.album  al
+join t.album  al
 where t.album.id = :albumId
 """)
     List<AlbumTrackSummary> findAllByAlbumId(@Param("albumId") Long albumId);
@@ -71,8 +74,11 @@ where t.album.id = :albumId
 select
   t.id as id,
   t.name as name,
-  t.durationSeconds as durationSeconds
+  t.durationSeconds as durationSeconds,
+  al.id as albumId,
+  al.name as albumName
 from Track t
+join t.album al
 where lower(t.name) like concat('%' ,  :keyword, '%')
 """)
     List<TrackSummary> searchByPrefix(@Param("keyword") String keyword);
@@ -80,10 +86,13 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
 
     @Query("""
         select
-            t.id as id,
+            distinct t.id as id,
             t.name as name,
-            t.durationSeconds as durationSeconds
+            t.durationSeconds as durationSeconds,
+            al.name as albumName,
+            al.id as albumId
             from Track t
+            join t.album al
             join t.artists a
             where a.id = :artistId
     """)
@@ -110,6 +119,23 @@ where lower(t.name) like concat('%' ,  :keyword, '%')
     where t.id in :trackIds
 """)
     List<TrackArtistFlatRow> findArtistsByTrackIds(@Param("trackIds")List<Long> trackIds);
+
+    @Query(
+            """
+           select
+               t.id as id,
+               t.name as name,
+               t.durationSeconds as durationSeconds,
+               al.name as albumName,
+               al.id as albumId
+           from Track t
+           join t.album al
+           join t.artists a
+           where a.id = :artistId
+           and al.primaryArtist.id <> :artistId
+    """
+    )
+    List<TrackSummary> findAllSinglesByArtistId(@Param("artistId") Long artistId);
 
 
 

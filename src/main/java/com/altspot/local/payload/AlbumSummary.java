@@ -7,4 +7,6 @@ public interface AlbumSummary {
     String getName();
     Long getPrimaryArtistId();
     String getPrimaryArtistName();
+    String getAlbumArtPath();
+    Integer getReleaseYear();
 }

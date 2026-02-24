@@ -1,6 +1,7 @@
 package com.altspot.local.service;
 
 import com.altspot.local.exception.GeneralException;
+import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.payload.*;
 import com.altspot.local.repository.ArtistRepository;
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ArtistServiceImpl implements  ArtistService {
@@ -73,5 +75,19 @@ public class ArtistServiceImpl implements  ArtistService {
             return artistDTO;
         }).toList();
         return artists;
+    }
+
+    @Override
+    public ArtistDTO getArtistById(Long artistId) {
+        if(artistId == null) throw new GeneralException("Artist id is null");
+
+        ArtistSummary summary = artistRepository.findProjectedById(artistId);
+
+        ArtistDTO artistDTO = new ArtistDTO();
+        artistDTO.setId(summary.getArtistId());
+        artistDTO.setName(summary.getArtistName());
+
+        if(artistDTO.getId() == null) throw new ResourceNotFound("Artist not found with id" + artistId);
+        return artistDTO;
     }
 }
