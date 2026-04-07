@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
 
     //Resource not found exception
     @ExceptionHandler(ResourceNotFound.class)
-    public ResponseEntity<ErrorDetails> resourceNotFound(RuntimeException ex) {
+    public ResponseEntity<ErrorDetails> resourceNotFound(ResourceNotFound ex) {
         ErrorDetails errorDetails = new ErrorDetails(
                 new Date(),
                 ex.getMessage());
@@ -28,11 +28,20 @@ public class GlobalExceptionHandler {
 
     //General exception for failed or unwanted conditions
     @ExceptionHandler(GeneralException.class)
-    public ResponseEntity<ErrorDetails> generalException(RuntimeException ex) {
+    public ResponseEntity<ErrorDetails> generalException(GeneralException ex) {
         ErrorDetails errorDetails = new ErrorDetails(
                 new Date(),
                 ex.getMessage()
         );
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(NullParameterException.class)
+    public ResponseEntity<ErrorDetails> exception(NullParameterException ex) {
+        ErrorDetails errorDetails = new ErrorDetails(
+                new Date(),
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 }

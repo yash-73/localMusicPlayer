@@ -2,17 +2,13 @@ package com.altspot.local.service;
 
 import com.altspot.local.config.userdetails.UserDetailsImpl;
 import com.altspot.local.exception.GeneralException;
+import com.altspot.local.exception.NullParameterException;
 import com.altspot.local.exception.ResourceNotFound;
-import com.altspot.local.model.Playlist;
-import com.altspot.local.model.PlaylistItem;
-import com.altspot.local.model.Track;
-import com.altspot.local.model.User;
+import com.altspot.local.model.*;
 import com.altspot.local.payload.*;
-import com.altspot.local.repository.PlaylistItemRepository;
-import com.altspot.local.repository.PlaylistRepository;
-import com.altspot.local.repository.TrackRepository;
-import com.altspot.local.repository.UserRepository;
+import com.altspot.local.repository.*;
 import jakarta.transaction.Transactional;
+import org.hibernate.sql.ast.tree.expression.Over;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,14 +25,18 @@ public class PlaylistServiceImpl implements PlaylistService {
     private final PlaylistRepository playlistRepository;
     private final PlaylistItemRepository playlistItemRepository;
     private final TrackRepository trackRepository;
+    private final ArtistRepository artistRepository;
 
     public PlaylistServiceImpl(UserRepository userRepository,  PlaylistRepository playlistRepository,
-                               PlaylistItemRepository playlistItemRepository , TrackRepository trackRepository) {
+                               PlaylistItemRepository playlistItemRepository , TrackRepository trackRepository,
+                               ArtistRepository artistRepository) {
         this.userRepository = userRepository;
         this.playlistRepository = playlistRepository;
         this.playlistItemRepository = playlistItemRepository;
         this.trackRepository = trackRepository;
+        this.artistRepository = artistRepository;
     }
+
 
 
 
@@ -73,33 +73,13 @@ public class PlaylistServiceImpl implements PlaylistService {
     public List<PlaylistItemDTO> getAllPlaylistItemsForPlaylist(Long playlistId) {
         if(!playlistRepository.existsById(playlistId)) throw new ResourceNotFound("Playlist not found");
 
-        List<PlaylistItemSummary> summaries = playlistItemRepository.findAllByPlaylistId(playlistId);
+        List<PlaylistItemSummary> summaries = playlistItemRepository.findAllSummariesByPlaylistId(playlistId);
 
-        List<Long> trackIds = summaries.stream().map(PlaylistItemSummary::getTrackId).toList();
+        Map<Long , Set<ArtistDTO>> artistMap = getArtistDTOsFromTrackSummaries(summaries);
 
-        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
-
-        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
-
-        for (var row : trackArtistFlatRows) {
-            artistMap
-                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
-                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
-        }
-
-
-        return summaries.stream().map(summary -> {
-            PlaylistItemDTO playlistItemDTO = new PlaylistItemDTO();
-            playlistItemDTO.setPlaylistItemId(summary.getPlaylistItemId());
-            playlistItemDTO.setPosition(summary.getPosition());
-            playlistItemDTO.setTrackId(summary.getTrackId());
-            playlistItemDTO.setTrackName(summary.getTrackName());
-            playlistItemDTO.setDurationSeconds(summary.getDurationSeconds());
-            playlistItemDTO.setAlbumId(summary.getAlbumId());
-            playlistItemDTO.setAlbumName(summary.getAlbumName());
-            playlistItemDTO.setArtists(artistMap.getOrDefault(summary.getTrackId() , Set.of()));
-            return playlistItemDTO;
-        }).toList();
+        return summaries.stream().map(summary ->
+                convertPlaylistItemSummaryToDTO(summary , artistMap.getOrDefault(summary.getTrackId() , Set.of()))
+        ).toList();
 
     }
 
@@ -134,6 +114,235 @@ public class PlaylistServiceImpl implements PlaylistService {
 
         return new PlaylistDTO(playlist.getId(), playlist.getName());
     }
+
+    @Transactional
+    @Override
+    public PlaylistItemDTO addTrackToPlaylist(Long playlistId, Long trackId) {
+        if(playlistId == null) throw new NullParameterException("playlistId is null");
+        if(trackId == null) throw new NullParameterException("trackId is null");
+
+        Playlist playlist = playlistRepository.findPlaylistByPlaylistId(playlistId);
+        if(playlist == null) throw new ResourceNotFound("Playlist not found");
+
+        Optional<Track> track = trackRepository.findById(trackId);
+        if(track.isEmpty()) throw new ResourceNotFound("Track not found");
+
+        Track currentTrack = track.get();
+
+        PlaylistItem playlistItem = new PlaylistItem();
+
+        playlistItem.setTrack(currentTrack);
+        playlistItem.setPlaylist(playlist);
+
+        //Setting the position
+        long position;
+        Optional<Long> lastPosition = playlistItemRepository.findMaxPositionByPlaylistId(playlistId);
+        position = lastPosition.orElse(0L);
+        position += 1000L;
+        playlistItem.setPosition(position);
+
+        //Save playlistItem
+        PlaylistItem savedPlaylistItem = playlistItemRepository.save(playlistItem);
+
+        Long id  = savedPlaylistItem.getId();
+        PlaylistItemSummary summary = playlistItemRepository.findSummaryByPlaylistItemId(id);
+
+        List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(trackId);
+
+        Set<ArtistDTO> artistDTOs = artistSummaries.stream()
+                .map(artistSummary ->
+                        new ArtistDTO(artistSummary.getArtistId() , artistSummary.getArtistName()))
+                .collect(Collectors.toSet());
+
+        return convertPlaylistItemSummaryToDTO(summary , artistDTOs);
+    }
+
+    @Transactional
+    @Override
+    public PlaylistItemDTO removeTrackFromPlaylist(Long playlistId, Long playlistItemId) {
+        if(playlistId == null) throw new NullParameterException("playlistId is null");
+        if(playlistItemId == null) throw new NullParameterException("trackId is null");
+
+        PlaylistItem playlistItem = playlistItemRepository.findByPlaylistIdAndPlaylistItemId(playlistId , playlistItemId)
+                .orElseThrow(() -> new ResourceNotFound("Playlist Item not found"));
+
+        List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(playlistItem.getTrack().getId());
+        Set<ArtistDTO> artistDTOs = artistSummaries.stream()
+                .map(artistSummary ->
+                        new ArtistDTO(artistSummary.getArtistId() , artistSummary.getArtistName()))
+                .collect(Collectors.toSet());
+
+        PlaylistItemDTO deletedPlaylistItemDTO =  convertPlaylistItemToPlaylistItemDTO(playlistItem, artistDTOs);
+
+        //Delete method
+        playlistItemRepository.delete(playlistItem);
+
+        return deletedPlaylistItemDTO;
+    }
+    @Transactional
+    @Override
+    public void reorderPlaylistItem(Long playlistId,
+                                    Long playlistItemId,
+                                    Long previousId,
+                                    Long nextId) {
+
+        if (playlistId == null) throw new NullParameterException("playlistId is null");
+        if (playlistItemId == null) throw new NullParameterException("playlistItemId is null");
+
+        PlaylistItem item = playlistItemRepository
+                .findByPlaylistIdAndPlaylistItemId(playlistId, playlistItemId)
+                .orElseThrow(() -> new ResourceNotFound("Item not found"));
+
+        Long prevPos = null;
+        Long nextPos = null;
+
+        if (previousId != -1) {
+            prevPos = playlistItemRepository
+                    .findPositionByPlaylistIdAndPlaylistItemId(playlistId, previousId)
+                    .orElseThrow(() -> new ResourceNotFound("Previous not found"));
+        }
+
+        if (nextId != -1) {
+            nextPos = playlistItemRepository
+                    .findPositionByPlaylistIdAndPlaylistItemId(playlistId, nextId)
+                    .orElseThrow(() -> new ResourceNotFound("Next not found"));
+        }
+
+        // Validate logical ordering
+        if (prevPos != null && nextPos != null && prevPos >= nextPos) {
+            throw new IllegalArgumentException("Invalid ordering state: prev >= next");
+        }
+
+        // ---- FIRST POSITION ----
+        if (previousId == -1) {
+
+            if (nextPos == null)
+                throw new IllegalStateException("Next item required for first insertion");
+
+            long candidate = nextPos - 1000;
+
+            if (candidate >= 0) {
+                item.setPosition(candidate);
+                playlistItemRepository.save(item);
+            } else {
+                reindexWithInsertion(playlistId, item, previousId, nextId);
+            }
+
+            return;
+        }
+
+        // ---- LAST POSITION ----
+        if (nextId == -1) {
+
+            if (prevPos == null)
+                throw new IllegalStateException("Previous item required for last insertion");
+
+            item.setPosition(prevPos + 1000);
+            playlistItemRepository.save(item);
+            return;
+        }
+
+        // ---- BETWEEN TWO ITEMS ----
+        long gap = nextPos - prevPos;
+
+        if (gap > 1) {
+            long newPos = prevPos + gap / 2;
+            item.setPosition(newPos);
+            playlistItemRepository.save(item);
+        } else {
+            reindexWithInsertion(playlistId, item, previousId, nextId);
+        }
+    }
+
+    private void reindexWithInsertion(Long playlistId,
+                                      PlaylistItem movingItem,
+                                      Long previousId,
+                                      Long nextId) {
+
+        List<PlaylistItem> items =
+                playlistItemRepository
+                        .findAllByPlaylist_IdOrderByPositionAsc(playlistId);
+
+        // Remove moving item
+        items.removeIf(i -> i.getId().equals(movingItem.getId()));
+
+        int insertIndex;
+
+        if (previousId == -1) {
+            insertIndex = 0;
+        }
+        else if (nextId == -1) {
+            insertIndex = items.size();
+        }
+        else {
+            insertIndex = -1;
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).getId().equals(previousId)) {
+                    insertIndex = i + 1;
+                    break;
+                }
+            }
+
+            if (insertIndex == -1) {
+                throw new IllegalStateException("Previous item not found in playlist during reindex");
+            }
+        }
+
+        items.add(insertIndex, movingItem);
+
+        long position = 1000L;
+
+        for (PlaylistItem item : items) {
+            item.setPosition(position);
+            position += 1000L;
+        }
+
+        playlistItemRepository.saveAll(items);
+    }
+
+    public PlaylistItemDTO convertPlaylistItemToPlaylistItemDTO(PlaylistItem playlistItem , Set<ArtistDTO> artistDTOs) {
+        PlaylistItemDTO playlistItemDTO = new PlaylistItemDTO();
+        playlistItemDTO.setPlaylistItemId(playlistItem.getId());
+        playlistItemDTO.setPosition(playlistItem.getPosition());
+        playlistItemDTO.setTrackId(playlistItem.getTrack().getId());
+        playlistItemDTO.setTrackName(playlistItem.getTrack().getName());
+        playlistItemDTO.setDurationSeconds(playlistItem.getTrack().getDurationSeconds());
+        playlistItemDTO.setAlbumId(playlistItem.getTrack().getAlbum().getId());
+        playlistItemDTO.setAlbumName(playlistItem.getTrack().getAlbum().getName());
+        playlistItemDTO.setArtists(artistDTOs);
+        return playlistItemDTO;
+    }
+
+    public PlaylistItemDTO convertPlaylistItemSummaryToDTO(PlaylistItemSummary playlistItemSummary , Set<ArtistDTO> artistDTOs) {
+        PlaylistItemDTO playlistItemDTO = new PlaylistItemDTO();
+        playlistItemDTO.setPlaylistItemId(playlistItemSummary.getPlaylistItemId());
+        playlistItemDTO.setPosition(playlistItemSummary.getPosition());
+        playlistItemDTO.setTrackId(playlistItemSummary.getTrackId());
+        playlistItemDTO.setTrackName(playlistItemSummary.getTrackName());
+        playlistItemDTO.setDurationSeconds(playlistItemSummary.getDurationSeconds());
+        playlistItemDTO.setAlbumId(playlistItemSummary.getAlbumId());
+        playlistItemDTO.setAlbumName(playlistItemSummary.getAlbumName());
+        playlistItemDTO.setArtists(artistDTOs);
+        return playlistItemDTO;
+
+    }
+
+    Map<Long , Set<ArtistDTO>> getArtistDTOsFromTrackSummaries(List<PlaylistItemSummary> summaries){
+        List<Long> trackIds = summaries.stream().map(PlaylistItemSummary::getTrackId).toList();
+
+        List<TrackArtistFlatRow> trackArtistFlatRows = trackRepository.findArtistsByTrackIds(trackIds);
+
+        Map<Long, Set<ArtistDTO>> artistMap = new HashMap<>();
+
+        for (var row : trackArtistFlatRows) {
+            artistMap
+                    .computeIfAbsent(row.getTrackId(), k -> new HashSet<>())
+                    .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
+        }
+        return artistMap;
+    }
+
+
 
 
 

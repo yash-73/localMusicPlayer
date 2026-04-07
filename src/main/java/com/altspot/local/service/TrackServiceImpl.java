@@ -2,6 +2,7 @@ package com.altspot.local.service;
 
 
 import com.altspot.local.exception.GeneralException;
+import com.altspot.local.exception.NullParameterException;
 import com.altspot.local.exception.ResourceNotFound;
 import com.altspot.local.model.Album;
 import com.altspot.local.model.Artist;
@@ -37,21 +38,14 @@ public class TrackServiceImpl implements TrackService {
 
     private static final Logger logger = LoggerFactory.getLogger(TrackServiceImpl.class);
 
-    private final ModelMapper modelMapper;
     private final TrackRepository trackRepository;
     private final AlbumRepository albumRepository;
     private final ArtistRepository artistRepository;
-    private final TrackArtistMaintenanceRepository trackArtistMaintenanceRepository;
-    private final AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository;
 
-    public TrackServiceImpl(ModelMapper modelMapper, TrackRepository trackRepository, AlbumRepository albumRepository, ArtistRepository artistRepository,
-                            TrackArtistMaintenanceRepository trackArtistMaintenanceRepository, AlbumArtistMaintenanceRepository albumArtistMaintenanceRepository) {
-        this.modelMapper = modelMapper;
+    public TrackServiceImpl(TrackRepository trackRepository, AlbumRepository albumRepository, ArtistRepository artistRepository) {
         this.trackRepository = trackRepository;
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
-        this.trackArtistMaintenanceRepository = trackArtistMaintenanceRepository;
-        this.albumArtistMaintenanceRepository = albumArtistMaintenanceRepository;
 
     }
 
@@ -62,7 +56,11 @@ public class TrackServiceImpl implements TrackService {
 
         List<ArtistSummary> artistSummaries = trackRepository.findArtistsByTrackId(id);
 
-        Set<ArtistDTO> artistDTOs = artistSummaries.stream()
+        Set<ArtistDTO> artistDTOs;
+
+        if(artistSummaries.isEmpty()) artistDTOs = Collections.emptySet();
+
+        else artistDTOs = artistSummaries.stream()
                 .map(artistSummary -> {
                     ArtistDTO artistDTO = new ArtistDTO();
                     artistDTO.setId(artistSummary.getArtistId());
@@ -76,20 +74,17 @@ public class TrackServiceImpl implements TrackService {
 
     @Override
     public List<TrackDTO> getSinglesByArtist(Long artistId) {
-        if(artistId == null) throw new GeneralException("Artist id is null");
+        if(artistId == null) throw new NullParameterException("Artist id is null");
+
         List<TrackSummary> trackSummaries = trackRepository.findAllSinglesByArtistId(artistId);
 
-        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
-
-        return trackSummaries.stream()
-                .map(track ->
-                    trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
-                )
-                .toList();
+        return buildTrackDTOsFromTrackSummaries(trackSummaries);
     }
 
     @Override
     public ResponseEntity<Resource> stream(Long trackId, String range) throws IOException {
+        if(trackId == null) throw new NullParameterException("Track id is null");
+        if(range == null) throw new NullParameterException("Range is null");
 
         Path path = Path.of(getFilePathFromDB(trackId));
         long fileSize = Files.size(path);
@@ -139,13 +134,7 @@ public class TrackServiceImpl implements TrackService {
 
         if (tracks.isEmpty()) throw new GeneralException("No tracks available");
 
-        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(tracks);
-
-        List<TrackDTO> content = tracks.stream()
-                .map(track ->
-                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
-                )
-                .toList();
+        List<TrackDTO> content = buildTrackDTOsFromTrackSummaries(tracks);
 
         PageResult<TrackDTO> trackResponse = new PageResult<TrackDTO>();
         trackResponse.setContent(content);
@@ -199,38 +188,31 @@ public class TrackServiceImpl implements TrackService {
                 ? ""
                 : keyword.trim().toLowerCase();
 
-        if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
+        if(normalizedKeyword.isEmpty()) throw new NullParameterException("Keyword is empty");
 
         List<TrackSummary> trackSummaries = trackRepository.searchByPrefix(normalizedKeyword);
 
-        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
-
-        return trackSummaries.stream()
-                .map(track ->
-                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
-                )
-                .toList();
+        return buildTrackDTOsFromTrackSummaries(trackSummaries);
     }
 
     @Override
     public List<TrackDTO> getTracksByArtist(Long artistId) {
-        if(artistId == null) throw new GeneralException("Artist id is null");
+        if(artistId == null) throw new NullParameterException("Artist id is null");
+
         Artist artist = artistRepository.findById(artistId).orElse(null);
+
         if(artist == null) throw new ResourceNotFound("Artist with id: " + artistId + " not found");
 
         List<TrackSummary> trackSummaries = trackRepository.findAllByArtistId(artistId);
 
-        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
-
-        return trackSummaries.stream()
-                .map(track ->
-                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
-                )
-                .toList();
+        return buildTrackDTOsFromTrackSummaries(trackSummaries);
     }
 
     private String getFilePathFromDB(Long trackId) {
+        if (trackId == null) throw new NullParameterException("Track id is null");
+
         Optional<Track> opt = trackRepository.findById(trackId);
+
         if (opt.isEmpty() || emptyToNull(opt.get().getFilePath()) == null) {
             throw new ResourceNotFound("Track with trackId" + trackId + " not found");
         }
@@ -271,6 +253,18 @@ public class TrackServiceImpl implements TrackService {
                     .add(new ArtistDTO(row.getArtistId(), row.getArtistName()));
         }
         return  artistMap;
+    }
+
+    private List<TrackDTO> buildTrackDTOsFromTrackSummaries(List<TrackSummary> trackSummaries){
+        if(trackSummaries.isEmpty()) return new ArrayList<>();
+
+        Map<Long, Set<ArtistDTO>> artistMap = createArtistMapFromTrackIds(trackSummaries);
+
+        return trackSummaries.stream()
+                .map(track ->
+                        trackSummaryToDTO(track , artistMap.getOrDefault(track.getId() , Set.of()))
+                )
+                .toList();
     }
 
 

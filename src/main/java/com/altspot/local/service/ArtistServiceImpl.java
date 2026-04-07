@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ArtistServiceImpl implements  ArtistService {
+public class ArtistServiceImpl implements ArtistService {
 
     private final ArtistRepository artistRepository;
 
@@ -23,10 +23,10 @@ public class ArtistServiceImpl implements  ArtistService {
     }
 
     @Override
-    public PageResult<ArtistDTO> getArtists(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection){
+    public PageResult<ArtistDTO> getArtists(Integer pageNumber, Integer pageSize, String sortBy, String sortDirection) {
 
-        Sort sortByAndOrder = sortDirection.equalsIgnoreCase("asc") ?
-                Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Sort sortByAndOrder = sortDirection.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
 
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
 
@@ -34,16 +34,12 @@ public class ArtistServiceImpl implements  ArtistService {
 
         List<ArtistSummary> artists = artistPage.getContent();
 
-        if (artists.isEmpty()) throw new GeneralException("No artists available");
+        if (artists.isEmpty())
+            throw new GeneralException("No artists available");
 
         List<ArtistDTO> content = artists.stream()
                 .map(artist -> {
-
-
-                    ArtistDTO artistDTO = new ArtistDTO();
-                    artistDTO.setId(artist.getArtistId());
-                    artistDTO.setName(artist.getArtistName());
-                    return artistDTO;
+                    return artistSummaryToDTO(artist);
                 })
                 .toList();
 
@@ -64,30 +60,34 @@ public class ArtistServiceImpl implements  ArtistService {
                 ? ""
                 : keyword.trim().toLowerCase();
 
-        if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
+        if (normalizedKeyword.isEmpty())
+            throw new GeneralException("Keyword is empty");
 
         List<ArtistSummary> albumSummaries = artistRepository.searchByPrefix(normalizedKeyword);
-        List<ArtistDTO> artists =  albumSummaries.stream().map(artist -> {
-            ArtistDTO artistDTO = new ArtistDTO();
-            artistDTO.setId(artist.getArtistId());
-            artistDTO.setName(artist.getArtistName());
-
-            return artistDTO;
+        List<ArtistDTO> artists = albumSummaries.stream().map(artist -> {
+            return artistSummaryToDTO(artist);
         }).toList();
         return artists;
     }
 
     @Override
     public ArtistDTO getArtistById(Long artistId) {
-        if(artistId == null) throw new GeneralException("Artist id is null");
+        if (artistId == null)
+            throw new GeneralException("Artist id is null");
 
         ArtistSummary summary = artistRepository.findProjectedById(artistId);
 
-        ArtistDTO artistDTO = new ArtistDTO();
-        artistDTO.setId(summary.getArtistId());
-        artistDTO.setName(summary.getArtistName());
+        ArtistDTO artistDTO = artistSummaryToDTO(summary);
 
-        if(artistDTO.getId() == null) throw new ResourceNotFound("Artist not found with id" + artistId);
+        if (artistDTO.getId() == null)
+            throw new ResourceNotFound("Artist not found with id" + artistId);
+        return artistDTO;
+    }
+
+    private ArtistDTO artistSummaryToDTO(ArtistSummary artist) {
+        ArtistDTO artistDTO = new ArtistDTO();
+        artistDTO.setId(artist.getArtistId());
+        artistDTO.setName(artist.getArtistName());
         return artistDTO;
     }
 }

@@ -28,7 +28,8 @@ public class AlbumServiceImpl implements AlbumService {
 
     private final ArtistRepository artistRepository;
 
-    public AlbumServiceImpl(ModelMapper modelMapper, AlbumRepository albumRepository,  ArtistRepository artistRepository) {
+    public AlbumServiceImpl(ModelMapper modelMapper, AlbumRepository albumRepository,
+            ArtistRepository artistRepository) {
         this.modelMapper = modelMapper;
         this.albumRepository = albumRepository;
         this.artistRepository = artistRepository;
@@ -50,15 +51,7 @@ public class AlbumServiceImpl implements AlbumService {
 
         List<AlbumDTO> content = tracks.stream()
                 .map(album -> {
-                    AlbumDTO albumDTO = new AlbumDTO();
-                    albumDTO.setId(album.getId());
-                    albumDTO.setName(album.getName());
-                    albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
-                    albumDTO.setReleaseYear(album.getReleaseYear());
-
-                    albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
-                    albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
-                    return albumDTO;
+                    return albumSummaryToDTO(album)
                 })
                 .toList();
 
@@ -79,37 +72,25 @@ public class AlbumServiceImpl implements AlbumService {
                 ? ""
                 : keyword.trim().toLowerCase();
 
-        if(normalizedKeyword.isEmpty()) throw new GeneralException("Keyword is empty");
+        if (normalizedKeyword.isEmpty())
+            throw new GeneralException("Keyword is empty");
 
         List<AlbumSummary> albumSummaries = albumRepository.searchByPrefix(normalizedKeyword);
-        List<AlbumDTO> albums =  albumSummaries.stream().map(album -> {
-            AlbumDTO albumDTO = new AlbumDTO();
-            albumDTO.setId(album.getId());
-            albumDTO.setName(album.getName());
-            albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
-            albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
-            albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
-            albumDTO.setReleaseYear(album.getReleaseYear());
-            return albumDTO;
+        List<AlbumDTO> albums = albumSummaries.stream().map(album -> {
+            return albumSummaryToDTO(album);
         }).toList();
         return albums;
     }
 
     @Override
     public Set<AlbumDTO> getAlbumsByArtist(Long artistId) {
-        Artist artist =  artistRepository.findById(artistId).orElse(null);
-        if(artist == null) throw new ResourceNotFound("Artist with artistId: " + artistId + " not found");
+        Artist artist = artistRepository.findById(artistId).orElse(null);
+        if (artist == null)
+            throw new ResourceNotFound("Artist with artistId: " + artistId + " not found");
         List<AlbumSummary> albumSummaries = albumRepository.findAllByArtistId(artistId);
 
         return albumSummaries.stream().map(album -> {
-            AlbumDTO albumDTO = new AlbumDTO();
-            albumDTO.setId(album.getId());
-            albumDTO.setName(album.getName());
-            albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
-            albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
-            albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
-            albumDTO.setReleaseYear(album.getReleaseYear());
-            return albumDTO;
+            return albumSummaryToDTO(album);
         }).collect(Collectors.toSet());
 
     }
@@ -119,13 +100,17 @@ public class AlbumServiceImpl implements AlbumService {
         Optional<AlbumSummary> albumSummary = albumRepository.findAlbumProjectedBy(albumId);
         if (albumSummary.isEmpty()) throw new ResourceNotFound("Album with albumId: " + albumId + " not found");
         AlbumSummary summary = albumSummary.get();
+        return albumSummaryToDTO(summary)
+    }
+
+    private AlbumDTO albumSummaryToDTO(AlbumSummary album) {
         AlbumDTO albumDTO = new AlbumDTO();
-        albumDTO.setId(summary.getId());
-        albumDTO.setName(summary.getName());
-        albumDTO.setPrimaryArtistId(summary.getPrimaryArtistId());
-        albumDTO.setPrimaryArtistName(summary.getPrimaryArtistName());
-        albumDTO.setAlbumArtUrl(summary.getAlbumArtPath());
-        albumDTO.setReleaseYear(summary.getReleaseYear());
+        albumDTO.setId(album.getId());
+        albumDTO.setName(album.getName());
+        albumDTO.setPrimaryArtistId(album.getPrimaryArtistId());
+        albumDTO.setPrimaryArtistName(album.getPrimaryArtistName());
+        albumDTO.setAlbumArtUrl(album.getAlbumArtPath());
+        albumDTO.setReleaseYear(album.getReleaseYear());
         return albumDTO;
     }
 }

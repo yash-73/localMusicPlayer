@@ -12,6 +12,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PlaylistItemDTO {
+    Long playlistId;
     Long playlistItemId;
     Long position;
     Long trackId;

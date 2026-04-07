@@ -17,4 +17,11 @@ public interface PlaylistService {
 
     PlaylistDTO createNewPlaylist(Authentication authentication , PlaylistMeta playlistMeta);
 
+    PlaylistItemDTO addTrackToPlaylist(Long playlistId, Long trackId);
+
+    PlaylistItemDTO removeTrackFromPlaylist(Long playlistId, Long playlistItemId);
+
+    void reorderPlaylistItem(Long playlistId, Long playlistItemId, Long previousId, Long nextId);
+
+
 }
